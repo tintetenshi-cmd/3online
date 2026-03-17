@@ -20,10 +20,10 @@ RUN cd packages/client && npm ci
 # Copier le code source (sans node_modules grâce au .dockerignore)
 COPY . .
 
-# Build (shared d'abord, puis refresh file:../shared dans les packages)
+# Build (shared d'abord, puis server + client comme en local)
 RUN npm run build:shared
-RUN cd packages/server && npm install ../shared --no-save && npm run build
-RUN cd packages/client && npm install ../shared --no-save && npm run build
+RUN cd packages/server && npm run build
+RUN cd packages/client && npm run build
 
 # Ne garder que les deps de prod pour le runner
 RUN npm prune --omit=dev
