@@ -1,28 +1,32 @@
 # Multi-stage build pour 3online
-FROM node:18-alpine AS base
+FROM node:18-alpine AS builder
 
-# Installer les dépendances système
+# Dépendances système
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Copier les fichiers de configuration
+# Installer les dépendances (dev incluses pour tsc/build)
 COPY package*.json ./
 COPY packages/client/package*.json ./packages/client/
 COPY packages/server/package*.json ./packages/server/
 COPY packages/shared/package*.json ./packages/shared/
+RUN npm ci
 
-# Installer les dépendances
-RUN npm ci --only=production
+# Installer les deps de chaque package (pas de workspaces ici)
+RUN cd packages/shared && npm ci
+RUN cd packages/server && npm ci
+RUN cd packages/client && npm ci
 
-# Stage de build
-FROM base AS builder
-WORKDIR /app
-
-# Copier le code source
+# Copier le code source (sans node_modules grâce au .dockerignore)
 COPY . .
 
-# Build du projet
-RUN npm run build
+# Build (shared d'abord, puis refresh file:../shared dans les packages)
+RUN npm run build:shared
+RUN cd packages/server && npm install ../shared --no-save && npm run build
+RUN cd packages/client && npm install ../shared --no-save && npm run build
+
+# Ne garder que les deps de prod pour le runner
+RUN npm prune --omit=dev
 
 # Stage de production
 FROM node:18-alpine AS runner

@@ -120,7 +120,10 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
 
     console.log('Connexion au serveur WebSocket...')
-    const newSocket = io('http://localhost:3001')
+    const serverUrl =
+      (import.meta as any).env?.VITE_SERVER_URL ||
+      ((import.meta as any).env?.PROD ? window.location.origin : 'http://localhost:3001')
+    const newSocket = io(serverUrl)
     
     newSocket.on('connect', () => {
       console.log('Connecté au serveur !')

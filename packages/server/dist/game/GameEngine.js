@@ -3,7 +3,7 @@
  * Implémente la logique de base du jeu Trio
  */
 import { TurnResultType, ActionType, CardLocation, GameStatus, TurnPhase, } from '@3online/shared';
-import { createFullDeck, getCardsPerPlayer, sortHand, generateUUID, checkVictoryConditions, getSmallestCard, getLargestCard, extractNumbers, allSameNumber, hasTwoConsecutiveDifferentNumbers, createTrio, getNextPlayer, createInitialGameState, } from '@3online/shared';
+import { createFullDeck, getCardsPerPlayer, sortHand, generateUUID, checkVictoryConditions, getSmallestCard, getLargestCard, extractNumbers, allSameNumber, hasTwoDifferentNumbers, createTrio, getNextPlayer, createInitialGameState, } from '@3online/shared';
 import { validateGameAction } from '@3online/shared';
 export class GameEngine {
     gameStates = new Map();
@@ -12,11 +12,10 @@ export class GameEngine {
      */
     initializeGame(gameId, roomId, players) {
         // Créer l'état de jeu initial
-        const gameState = {
-            ...createInitialGameState(gameId, roomId, players),
-            gameStatus: GameStatus.ACTIVE,
-            turnPhase: TurnPhase.WAITING_FOR_ACTION,
-        };
+        const gameState = createInitialGameState(gameId, roomId, players);
+        // Mettre à jour le statut pour indiquer que le jeu est actif
+        gameState.gameStatus = GameStatus.ACTIVE;
+        gameState.turnPhase = TurnPhase.WAITING_FOR_ACTION;
         // Distribuer les cartes
         const distribution = this.distributeCards(players);
         gameState.players = distribution.players;
@@ -24,6 +23,7 @@ export class GameEngine {
         // Choisir le premier joueur (aléatoire)
         const randomIndex = Math.floor(Math.random() * players.length);
         gameState.currentPlayerId = players[randomIndex].id;
+        console.log(`Jeu initialisé: ${gameId}, premier joueur: ${gameState.currentPlayerId}`);
         // Sauvegarder l'état
         this.gameStates.set(gameId, gameState);
         return gameState;
@@ -160,15 +160,19 @@ export class GameEngine {
      */
     processTurn(gameState, playerId) {
         const revealedNumbers = extractNumbers(gameState.revealedCards);
-        // Vérifier si un trio est formé
+        console.log(`Traitement du tour - Cartes révélées: ${revealedNumbers.join(', ')}`);
+        // Vérifier si un trio est formé (3 cartes identiques)
         if (allSameNumber(revealedNumbers) && revealedNumbers.length === 3) {
+            console.log('Trio formé !');
             return this.handleTrioFormed(gameState, playerId);
         }
-        // Vérifier si le tour doit se terminer
-        if (hasTwoConsecutiveDifferentNumbers(revealedNumbers)) {
+        // Vérifier si le tour doit se terminer (2 cartes différentes)
+        if (revealedNumbers.length >= 2 && hasTwoDifferentNumbers(revealedNumbers)) {
+            console.log('Fin de tour - 2 cartes différentes révélées');
             return this.handleTurnEnd(gameState);
         }
-        // Continuer le tour
+        // Continuer le tour (moins de 2 cartes ou toutes identiques)
+        console.log('Tour continue...');
         gameState.turnPhase = TurnPhase.WAITING_FOR_ACTION;
         return { type: TurnResultType.CONTINUE_TURN };
     }
@@ -324,7 +328,10 @@ export class GameEngine {
      * Obtient l'état actuel du jeu
      */
     getCurrentGameState(gameId) {
-        return this.gameStates.get(gameId) || null;
+        const gameState = this.gameStates.get(gameId);
+        console.log(`Recherche gameState pour gameId: ${gameId}, trouvé: ${!!gameState}`);
+        console.log(`GameStates disponibles:`, Array.from(this.gameStates.keys()));
+        return gameState || null;
     }
     /**
      * Obtient les actions valides pour un joueur

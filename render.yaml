@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: 3online
+    env: node
+    plan: free
+    buildCommand: npm run install:all && npm run build
+    startCommand: node packages/server/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production

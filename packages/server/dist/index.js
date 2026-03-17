@@ -4,13 +4,39 @@
  */
 import express from 'express';
 import { createServer } from 'http';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { GameEngine } from './game/GameEngine.js';
 import { RoomManager } from './room/RoomManager.js';
 import { AIEngine } from './ai/AIEngine.js';
 import { WebSocketGateway } from './websocket/WebSocketGateway.js';
 // Configuration
 const PORT = process.env.PORT || 3001;
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5174';
+const CLIENT_URL = process.env.CLIENT_URL;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+function resolveClientDistPath() {
+    const candidates = [
+        // Render (build in repo)
+        path.resolve(process.cwd(), 'packages/client/dist'),
+        // Dockerfile runner stage copies Vite dist here
+        path.resolve(process.cwd(), 'client'),
+        // Fallback if running from packages/server/dist with repo layout
+        path.resolve(__dirname, '../../client/dist'),
+    ];
+    for (const candidate of candidates) {
+        try {
+            if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory())
+                return candidate;
+        }
+        catch {
+            // ignore
+        }
+    }
+    return null;
+}
 class Server {
     app;
     httpServer;
@@ -36,7 +62,18 @@ class Server {
     setupMiddleware() {
         // CORS simple
         this.app.use((req, res, next) => {
-            res.header('Access-Control-Allow-Origin', CLIENT_URL);
+            const origin = req.headers.origin;
+            const isLocalOrigin = typeof origin === 'string' &&
+                (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin));
+            const allowOrigin = 
+            // Dev local (Vite peut changer de port)
+            isLocalOrigin ? origin :
+                // URL explicitement configurée (prod)
+                (typeof origin === 'string' && CLIENT_URL && origin === CLIENT_URL) ? origin :
+                    // En prod, être permissif pour éviter les blocages CORS sur Render/preview domains
+                    (NODE_ENV === 'production' ? origin : CLIENT_URL);
+            if (allowOrigin)
+                res.header('Access-Control-Allow-Origin', allowOrigin);
             res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
             res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
             res.header('Access-Control-Allow-Credentials', 'true');
@@ -137,6 +174,22 @@ class Server {
             res.set('Content-Type', 'text/plain');
             res.send(metrics);
         });
+        // Servir le client (Vite build) en production
+        const clientDistPath = resolveClientDistPath();
+        if (clientDistPath) {
+            this.app.use(express.static(clientDistPath));
+            // SPA fallback (React Router)
+            this.app.get('*', (req, res, next) => {
+                // Laisser les routes API/health/etc répondre en JSON (déjà définies au-dessus)
+                // Ici, on ne fallback que pour les requêtes GET "HTML" (navigations)
+                const accept = req.headers.accept || '';
+                if (typeof accept === 'string' && accept.includes('text/html')) {
+                    res.sendFile(path.join(clientDistPath, 'index.html'));
+                    return;
+                }
+                next();
+            });
+        }
         // Route 404 pour les routes non trouvées
         this.app.use('*', (req, res) => {
             res.status(404).json({

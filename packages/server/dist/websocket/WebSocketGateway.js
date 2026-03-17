@@ -15,9 +15,17 @@ export class WebSocketGateway {
         this.gameEngine = gameEngine;
         this.aiEngine = aiEngine;
         // Initialiser Socket.IO
+        const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
         this.io = new SocketIOServer(httpServer, {
             cors: {
-                origin: process.env.CLIENT_URL || "http://localhost:5174",
+                origin: (origin, callback) => {
+                    // Certains environnements n'envoient pas d'Origin (ex: outils locaux)
+                    if (!origin)
+                        return callback(null, true);
+                    const isLocal = /^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
+                    const isConfigured = origin === clientUrl;
+                    return callback(null, isLocal || isConfigured);
+                },
                 methods: ["GET", "POST"],
                 credentials: true,
             },
@@ -44,13 +52,15 @@ export class WebSocketGateway {
      */
     setupSocketHandlers(socket) {
         // Gestion des salles
-        socket.on('createRoom', async (playerName, avatar, settings, callback) => {
+        socket.on('createRoom', async (playerName, avatar, avatarSeed, nameColor, settings, callback) => {
             try {
                 const playerId = generateUUID(); // Générer un vrai UUID
                 const player = {
                     id: playerId, // Utiliser l'UUID généré
                     name: playerName,
                     avatar,
+                    avatarSeed,
+                    nameColor,
                     hand: [],
                     trios: [],
                     isAI: false,
@@ -76,13 +86,15 @@ export class WebSocketGateway {
                 });
             }
         });
-        socket.on('joinRoom', async (roomCode, playerName, avatar, callback) => {
+        socket.on('joinRoom', async (roomCode, playerName, avatar, avatarSeed, nameColor, callback) => {
             try {
                 const playerId = generateUUID(); // Générer un vrai UUID
                 const player = {
                     id: playerId, // Utiliser l'UUID généré
                     name: playerName,
                     avatar,
+                    avatarSeed,
+                    nameColor,
                     hand: [],
                     trios: [],
                     isAI: false,
@@ -158,11 +170,15 @@ export class WebSocketGateway {
                     // Initialiser le jeu
                     const roomState = this.roomManager.getRoomState(roomId);
                     if (roomState) {
-                        const gameId = `game_${roomId}_${Date.now()}`;
+                        // Utiliser le roomId comme gameId pour simplifier
+                        const gameId = roomId;
                         const gameState = this.gameEngine.initializeGame(gameId, roomId, roomState.players);
+                        console.log(`Jeu initialisé avec gameId: ${gameId}`);
                         // Notifier tous les joueurs
                         this.broadcastToRoom(roomId, 'gameStarted', gameState);
                         this.broadcastToRoom(roomId, 'roomUpdated', roomState);
+                        // Traiter le premier tour si c'est une IA
+                        await this.processAITurnIfNeeded(gameState);
                     }
                 }
                 callback(startResult);
@@ -219,11 +235,14 @@ export class WebSocketGateway {
                     return;
                 }
                 // Traiter l'action via le moteur de jeu
-                const gameState = this.gameEngine.getCurrentGameState(action.gameId || roomId);
+                // Utiliser le roomId comme gameId
+                const gameState = this.gameEngine.getCurrentGameState(roomId);
                 if (!gameState) {
+                    console.log(`Partie non trouvée pour roomId: ${roomId}`);
                     callback({ success: false, message: 'Partie non trouvée' });
                     return;
                 }
+                console.log(`Action reçue de ${playerId} dans la partie ${roomId}:`, action.actionType);
                 const result = this.gameEngine.processCardReveal(gameState.gameId, playerId, action);
                 if (result.success && result.newGameState) {
                     // Diffuser les mises à jour
@@ -364,18 +383,22 @@ export class WebSocketGateway {
      */
     async processAITurnIfNeeded(gameState) {
         const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+        console.log(`Vérification tour IA - Joueur actuel: ${currentPlayer?.name}, isAI: ${currentPlayer?.isAI}, gameStatus: ${gameState.gameStatus}`);
         if (currentPlayer?.isAI && gameState.gameStatus === 'ACTIVE') {
+            console.log(`Tour IA détecté pour ${currentPlayer.name}`);
             try {
                 // Obtenir les actions disponibles
                 const availableActions = this.gameEngine.getValidActions(gameState.gameId, currentPlayer.id);
+                console.log(`Actions disponibles pour l'IA: ${availableActions.length}`);
                 if (availableActions.length > 0) {
+                    console.log(`L'IA ${currentPlayer.name} va prendre une décision...`);
                     // Faire prendre une décision à l'IA
                     const decision = await this.aiEngine.makeDecision(gameState, currentPlayer, {
                         availableActions,
                     });
+                    console.log(`Décision prise par l'IA: ${decision.action.actionType}`);
                     // Délai pour simuler la réflexion basé sur la difficulté et la décision
                     const thinkingTime = this.calculateAIThinkingTime(currentPlayer, decision);
-                    await new Promise(resolve => setTimeout(resolve, thinkingTime));
                     // Notifier que l'IA réfléchit
                     this.broadcastToRoom(gameState.roomId, 'aiThinking', {
                         playerId: currentPlayer.id,
@@ -383,9 +406,10 @@ export class WebSocketGateway {
                         thinkingTime: thinkingTime
                     });
                     // Attendre le temps de réflexion
-                    await new Promise(resolve => setTimeout(resolve, Math.min(thinkingTime, 500)));
+                    await new Promise(resolve => setTimeout(resolve, thinkingTime));
                     // Exécuter l'action de l'IA
                     const result = this.gameEngine.processCardReveal(gameState.gameId, currentPlayer.id, decision.action);
+                    console.log(`Résultat de l'action IA: ${result.success}`);
                     if (result.success && result.newGameState) {
                         // Diffuser les résultats de l'action IA
                         this.broadcastToRoom(gameState.roomId, 'aiAction', {
@@ -402,15 +426,29 @@ export class WebSocketGateway {
                         if (result.trioFormed) {
                             this.broadcastToRoom(gameState.roomId, 'trioFormed', result.trioFormed, currentPlayer.id);
                         }
+                        // Notifier l'échec de trio si le tour se termine sans trio
+                        if (result.newGameState.currentPlayerId !== currentPlayer.id && !result.trioFormed) {
+                            this.broadcastToRoom(gameState.roomId, 'trioFailed', currentPlayer.id);
+                        }
                         if (result.victoryResult?.hasWon) {
                             this.broadcastToRoom(gameState.roomId, 'gameEnded', result.victoryResult);
                         }
-                        else if (result.newGameState.currentPlayerId !== currentPlayer.id) {
-                            this.broadcastToRoom(gameState.roomId, 'turnChanged', result.newGameState.currentPlayerId);
+                        else {
+                            // Vérifier si le tour a changé
+                            if (result.newGameState.currentPlayerId !== currentPlayer.id) {
+                                this.broadcastToRoom(gameState.roomId, 'turnChanged', result.newGameState.currentPlayerId);
+                            }
                             // Récursion pour traiter le prochain tour IA si nécessaire
+                            // (que ce soit le même joueur IA qui continue ou un autre joueur IA)
                             await this.processAITurnIfNeeded(result.newGameState);
                         }
                     }
+                    else {
+                        console.error(`Échec de l'action IA: ${result.message}`);
+                    }
+                }
+                else {
+                    console.log(`Aucune action disponible pour l'IA ${currentPlayer.name}`);
                 }
             }
             catch (error) {
@@ -418,6 +456,9 @@ export class WebSocketGateway {
                 // En cas d'erreur, passer au joueur suivant
                 // Cette logique devrait être implémentée dans le GameEngine
             }
+        }
+        else {
+            console.log(`Pas de tour IA nécessaire - currentPlayer: ${currentPlayer?.name}, isAI: ${currentPlayer?.isAI}, gameStatus: ${gameState.gameStatus}`);
         }
     }
     calculateAIThinkingTime(aiPlayer, decision) {

@@ -404,6 +404,7 @@ export interface ServerToClientEvents {
   gameStateUpdated: (gameState: GameState) => void;
   cardRevealed: (card: Card, playerId: UUID) => void;
   trioFormed: (trio: Trio, playerId: UUID) => void;
+  trioFailed: (playerId: UUID) => void;
   turnChanged: (newPlayerId: UUID) => void;
   gameEnded: (result: VictoryResult) => void;
 

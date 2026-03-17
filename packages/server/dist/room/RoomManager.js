@@ -2,13 +2,52 @@
  * Gestionnaire des salles de jeu pour 3online
  * Gère la création, jointure, et gestion des salles
  */
-import { RoomStatus, AvatarType, ConnectionStatus, } from '@3online/shared';
+import { RoomStatus, AvatarType, ConnectionStatus, AI_DIFFICULTY_CONFIGS, } from '@3online/shared';
 import { generateUUID, generateRoomCode, createPlayer, } from '@3online/shared';
 import { validateRoomSettings, validateRoomInfo } from '@3online/shared';
 export class RoomManager {
     rooms = new Map();
     roomCodes = new Map();
     playerRooms = new Map(); // playerId -> roomId
+    // Noms de bots rigolos (100+) - évite les doublons dans une salle
+    static BOT_NAMES = [
+        'Clippy.exe', 'Excelorciste', 'BugBiscotte', 'Caféine404', 'PixelPoulpe', 'SaucisseQuantique',
+        'MarmotteBinaire', 'CrayonFurtif', 'GrenouillePDF', 'ChaussetteSQL', 'PapierTigre', 'LaserBaguette',
+        'TromboneNinja', 'CookieKarma', 'PoussinRegex', 'BananeTLS', 'SablierCosmique', 'LutinCache',
+        'PingouinNoScope', 'BeurreCrypté', 'ChouFleurAPI', 'PandaParfait', 'TracteurUDP', 'KebabKernel',
+        'CactusCompile', 'RavioliRouter', 'DodoDocker', 'MoucheMiddleware', 'MoineauMongo', 'BiscuitBit',
+        'ChatGPTuile', 'CarotteCSS', 'CyborgBoulon', 'GaufreGiga', 'MétéoreMemo', 'PlumeProxy',
+        'SphinxSocket', 'TortueThread', 'LamaLambda', 'RatonRuntime', 'SardineServer', 'OrageORM',
+        'TetrisToken', 'VortexVite', 'MoustacheMutex', 'BulleBackend', 'FéeFrontend', 'PingPongPacket',
+        'NébuleuseNPM', 'BaguetteBabel', 'QuicheQueue', 'BureauByte', 'GlitchGourmand', 'ChimèreCache',
+        'ChocoChecksum', 'ZèbreZeroDay', 'WaffleWebSocket', 'HibouHMR', 'SushiSession', 'CrêpeCrypto',
+        'FloconFirewall', 'BisonBitrate', 'KoalaKubernetes', 'PigeonPayload', 'SorbetSocket', 'NimbusNode',
+        'TapiocaType', 'RizReactif', 'MangoMiddleware', 'PoulardeProtocol', 'GnomeGit', 'MielMerge',
+        'OctetOignon', 'GobelinsGraph', 'RêveurRoute', 'BricoleurBuild', 'SpriteStack', 'NounoursNginx',
+        'CoccinelleCI', 'PoupéeProxy', 'MarmeladeMap', 'CobaltCallback', 'BriqueBrowser', 'CapybaraCache',
+        'MédusaModule', 'SilexSyntax', 'DinoDiff', 'RêneRequest', 'TruffeTLS', 'PistachePatch',
+        'KiwixKey', 'RumbaRouter', 'BourdonBundle', 'GrimoireGraphQL', 'SalsaSocket', 'RacletteReact',
+        'PoneyPacket', 'GlaçonGzip', 'NoisetteNAT', 'ChimieChunk', 'BouleBash', 'ChouetteChangelog',
+    ];
+    // Couleurs/gradients de pseudo pour bots (compatibles client: linear-gradient(...) ou hex)
+    static BOT_NAME_STYLES = [
+        '#E9D5FF', '#C4B5FD', '#93C5FD', '#DBEAFE', '#FBCFE8', '#FDE68A', '#A7F3D0', '#FFFFFF',
+        'linear-gradient(90deg, #C4B5FD, #93C5FD)',
+        'linear-gradient(90deg, #E9D5FF, #DBEAFE)',
+        'linear-gradient(90deg, #FBCFE8, #E9D5FF)',
+        'linear-gradient(90deg, #A7F3D0, #DBEAFE)',
+        'linear-gradient(90deg, #FDE68A, #FBCFE8)',
+        'linear-gradient(90deg, #C4B5FD, #FBCFE8)',
+        'linear-gradient(90deg, #93C5FD, #A7F3D0)',
+        'linear-gradient(90deg, #DBEAFE, #C4B5FD)',
+        'linear-gradient(90deg, #FBCFE8, #93C5FD)',
+        'linear-gradient(90deg, #E9D5FF, #A7F3D0)',
+        'linear-gradient(90deg, #A78BFA, #C4B5FD)',
+        'linear-gradient(90deg, #818CF8, #93C5FD)',
+    ];
+    pickRandom(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
     /**
      * Crée une nouvelle salle
      */
@@ -168,15 +207,19 @@ export class RoomManager {
             throw new Error('Les IA ne sont pas autorisées dans cette salle');
         }
         // Générer un nom unique pour l'IA
-        const aiName = this.generateAIName(roomState.players, difficulty);
+        const aiName = this.generateAIName(roomState.players);
         // Choisir un avatar disponible
         const availableAvatars = this.getAvailableAvatars(roomState.players);
-        const aiAvatar = availableAvatars[0] || AvatarType.AVATAR_3;
-        // Créer le joueur IA
+        const aiAvatar = (availableAvatars.length > 0 ? this.pickRandom(availableAvatars) : AvatarType.AVATAR_3);
+        // Couleur/gradient de pseudo aléatoire
+        const aiNameColor = this.pickRandom(RoomManager.BOT_NAME_STYLES);
+        // Créer le joueur IA avec sa stratégie
         const aiPlayer = {
             ...createPlayer(aiName, aiAvatar, true),
             aiDifficulty: difficulty,
-        };
+            strategy: AI_DIFFICULTY_CONFIGS[difficulty],
+            nameColor: aiNameColor,
+        }; // Cast temporaire pour éviter les erreurs de type
         // Ajouter à la salle
         roomState.players.push(aiPlayer);
         this.playerRooms.set(aiPlayer.id, roomId);
@@ -296,26 +339,18 @@ export class RoomManager {
     /**
      * Génère un nom unique pour une IA
      */
-    generateAIName(existingPlayers, difficulty) {
-        const aiNamesByDifficulty = {
-            EASY: ['Novice', 'Apprenti', 'Débutant', 'Rookie', 'Cadet'],
-            MEDIUM: ['Stratège', 'Tacticien', 'Calculateur', 'Analyste', 'Logicien'],
-            HARD: ['Maître', 'Expert', 'Virtuose', 'Génie', 'Prodige']
-        };
-        const names = aiNamesByDifficulty[difficulty] || aiNamesByDifficulty.MEDIUM;
-        for (const name of names) {
-            if (!existingPlayers.some(p => p.name === name)) {
-                return name;
-            }
-        }
-        // Si tous les noms sont pris, générer un nom avec un numéro
+    generateAIName(existingPlayers) {
+        const used = new Set(existingPlayers.map(p => p.name));
+        const pool = RoomManager.BOT_NAMES.filter(n => !used.has(n));
+        if (pool.length > 0)
+            return this.pickRandom(pool);
+        // Fallback si (très improbable) tous pris
         let counter = 1;
         let name;
-        const baseName = difficulty === 'EASY' ? 'Bot' : difficulty === 'HARD' ? 'IA' : 'CPU';
         do {
-            name = `${baseName} ${counter}`;
+            name = `Bot-${counter}`;
             counter++;
-        } while (existingPlayers.some(p => p.name === name));
+        } while (used.has(name));
         return name;
     }
     /**

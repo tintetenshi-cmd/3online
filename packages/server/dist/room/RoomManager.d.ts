@@ -7,6 +7,9 @@ export declare class RoomManager {
     private rooms;
     private roomCodes;
     private playerRooms;
+    private static readonly BOT_NAMES;
+    private static readonly BOT_NAME_STYLES;
+    private pickRandom;
     /**
      * Crée une nouvelle salle
      */

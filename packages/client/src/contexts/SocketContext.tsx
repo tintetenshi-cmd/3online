@@ -40,7 +40,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // URL du serveur (configurable via variable d'environnement)
-    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+    const serverUrl =
+      import.meta.env.VITE_SERVER_URL ||
+      (import.meta.env.PROD ? window.location.origin : 'http://localhost:3001');
     
     console.log('Connexion au serveur:', serverUrl);
 
