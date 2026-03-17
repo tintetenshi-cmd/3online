@@ -1,0 +1,143 @@
+/* Mode travail: style neutre type "outil interne" */
+body.theme-work {
+  background: #f5f5f5 !important;
+  color: #111 !important;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif !important;
+}
+
+/* Neutraliser gradients/effets/animations */
+body.theme-work *,
+body.theme-work *::before,
+body.theme-work *::after {
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, opacity 0.15s ease !important;
+}
+
+/* Containers principaux */
+body.theme-work .app,
+body.theme-work .game-board,
+body.theme-work .lobby,
+body.theme-work .rules,
+body.theme-work .main-menu {
+  background: transparent !important;
+}
+
+/* Panneaux / surfaces */
+body.theme-work .lobby__container,
+body.theme-work .rules__container,
+body.theme-work #game-container,
+body.theme-work .game-header,
+body.theme-work .chat-sidebar,
+body.theme-work .player-hand-bar,
+body.theme-work .lobby__players,
+body.theme-work .lobby__chat,
+body.theme-work .mode-card,
+body.theme-work .rules__section,
+body.theme-work .player-setup__modal {
+  background: #ffffff !important;
+  border: 1px solid #d0d0d0 !important;
+  border-radius: 3px !important;
+  backdrop-filter: none !important;
+}
+
+body.theme-work .lobby__header,
+body.theme-work .rules__header {
+  border-bottom: 1px solid #d0d0d0 !important;
+}
+
+/* Titres / textes */
+body.theme-work h1,
+body.theme-work h2,
+body.theme-work h3,
+body.theme-work p,
+body.theme-work span,
+body.theme-work label {
+  color: #111 !important;
+}
+
+/* Pseudos en gradient: forcer texte normal */
+body.theme-work .pseudo-text--gradient {
+  background-image: none !important;
+  -webkit-text-fill-color: #111 !important;
+  color: #111 !important;
+}
+
+body.theme-work .room-code,
+body.theme-work .text-muted,
+body.theme-work .text-secondary {
+  color: #444 !important;
+}
+
+/* Boutons (y compris Button.tsx) */
+body.theme-work .btn,
+body.theme-work button {
+  background: #f7f7f7 !important;
+  color: #111 !important;
+  border: 1px solid #3a3a3a !important;
+  border-radius: 3px !important;
+  transform: none !important;
+}
+
+body.theme-work .btn:hover:not(.btn--disabled),
+body.theme-work button:hover:not(:disabled) {
+  background: #ededed !important;
+  border-color: #111 !important;
+}
+
+body.theme-work .btn::before,
+body.theme-work .btn::after {
+  display: none !important;
+}
+
+/* Inputs */
+body.theme-work input,
+body.theme-work select,
+body.theme-work textarea {
+  background: #ffffff !important;
+  color: #111 !important;
+  border: 1px solid #bdbdbd !important;
+  border-radius: 3px !important;
+  box-shadow: none !important;
+}
+
+/* Cartes (centre + main) */
+body.theme-work .card,
+body.theme-work .center-card,
+body.theme-work .player-hand-card,
+body.theme-work .revealed-card {
+  background: #ffffff !important;
+  border: 1px solid #bdbdbd !important;
+  border-radius: 3px !important;
+}
+
+body.theme-work .center-card.hidden {
+  background: #f1f1f1 !important;
+  color: #222 !important;
+}
+
+/* Désactiver hover "peek" */
+body.theme-work .card__inner {
+  transform: none !important;
+}
+
+/* Liste joueurs / chat messages */
+body.theme-work .player-item,
+body.theme-work .chat-message,
+body.theme-work .opponent-card {
+  background: #ffffff !important;
+  border: 1px solid #e0e0e0 !important;
+  border-radius: 3px !important;
+}
+
+body.theme-work .status-dot {
+  background: #666 !important;
+}
+
+/* Overlay PlayerSetup */
+body.theme-work .player-setup__overlay {
+  background: rgba(0, 0, 0, 0.25) !important;
+}
+

@@ -1,0 +1,741 @@
+/* GameBoard - Layout optimisé et responsive */
+.game-board {
+  height: 100vh;
+  /* Fond unifié (violet pastel) */
+  background: var(--app-bg);
+  color: white;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+}
+
+.game-board--loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-spinner {
+  text-align: center;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top: 4px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Layout global (Grid) */
+#game-container {
+  height: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 280px 1fr 320px;
+  grid-template-rows: auto 1fr auto;
+  grid-template-areas:
+    "header header header"
+    "players center chat"
+    "hand hand hand";
+}
+
+/* Header */
+.game-header {
+  grid-area: header;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--surface);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border-soft);
+  flex-shrink: 0;
+  z-index: 100;
+  border-radius: 14px;
+}
+
+.game-title h1 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0;
+  background: linear-gradient(45deg, var(--text, #fff), var(--accent-2, #c4b5fd));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.room-code {
+  font-size: 0.9rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.leave-btn {
+  background: var(--surface) !important;
+  border: 1px solid var(--border-soft) !important;
+  color: white !important;
+  transition: all 0.2s ease;
+}
+
+
+.leave-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-1px);
+}
+
+/* Colonne joueurs (gauche) */
+.opponents-section {
+  grid-area: players;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.opponent-card {
+  background: var(--surface);
+  backdrop-filter: blur(15px);
+  border-radius: 12px;
+  padding: 12px;
+  min-width: 0;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.opponent-card.current-player {
+  border-color: rgba(196, 181, 253, 0.95);
+  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.14);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.12); }
+  50% { box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.20); }
+}
+
+.opponent-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.opponent-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(233, 213, 255, 0.95), rgba(167, 139, 250, 0.95));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.opponent-avatar-emoji {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.opponent-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.ai-badge {
+  background: rgba(196, 181, 253, 0.14);
+  border: 1px solid rgba(196, 181, 253, 0.22);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.opponent-stats {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+
+.opponent-trios {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.trio-badge {
+  color: white;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Board central - centré avec les cartes du joueur */
+.game-center {
+  grid-area: center;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+  align-content: start;
+  gap: 12px;
+}
+
+/* Cartes du centre - même largeur que les cartes du joueur */
+.center-cards-section {
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.center-cards {
+  --center-card-w: 120px;
+  --center-card-h: 180px;
+  display: grid;
+  grid-template-columns: repeat(3, var(--center-card-w));
+  grid-auto-rows: var(--center-card-h);
+  gap: 8px;
+  justify-content: center;
+  align-content: center;
+}
+
+.center-card {
+  width: var(--center-card-w);
+  height: var(--center-card-h);
+  display: grid;
+  place-items: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  cursor: pointer;
+  user-select: none;
+}
+
+.center-card.hidden {
+  /* Dos stylisé (motifs) */
+  background:
+    radial-gradient(120px 90px at 20% 25%, rgba(219, 234, 254, 0.18), transparent 60%),
+    radial-gradient(140px 110px at 78% 68%, rgba(196, 181, 253, 0.16), transparent 62%),
+    repeating-linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.05) 6px,
+      transparent 6px,
+      transparent 14px
+    ),
+    linear-gradient(135deg, rgba(19, 33, 74, 0.78), rgba(42, 27, 90, 0.62));
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Variations "pseudo-aléatoires" par position */
+.center-card.hidden:nth-child(2n) {
+  background-position: 0 0, 0 0, 10px -6px, 0 0;
+}
+.center-card.hidden:nth-child(3n) {
+  background-position: 0 0, 0 0, -8px 12px, 0 0;
+}
+.center-card.hidden:nth-child(5n) {
+  background-position: 0 0, 0 0, 14px 8px, 0 0;
+}
+
+.center-card.hidden .card-back {
+  letter-spacing: 0.02em;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+}
+
+.center-card.revealed {
+  color: white;
+}
+
+/* Indicateur de tour - intégré dans le flow */
+.turn-status-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin: 0;
+}
+
+.turn-indicator {
+  background: var(--surface);
+  backdrop-filter: blur(15px);
+  padding: 12px 16px;
+  border-radius: 25px;
+  border: 2px solid;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: none;
+}
+
+.turn-indicator.info {
+  border-color: rgba(233, 213, 255, 0.22);
+  background: rgba(233, 213, 255, 0.06);
+}
+
+.turn-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.thinking-dots {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.thinking-dots span {
+  width: 8px;
+  height: 8px;
+  background: white;
+  border-radius: 50%;
+  animation: thinking 1.4s infinite ease-in-out;
+}
+
+.thinking-dots span:nth-child(1) { animation-delay: -0.32s; }
+.thinking-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes thinking {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1); }
+}
+
+/* Messages de jeu */
+.game-message {
+  padding: 1rem 2rem;
+  border-radius: 15px;
+  font-weight: 600;
+  font-size: 1.1rem;
+  animation: messageSlide 0.3s ease-out;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.game-message.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+}
+
+.game-message.error {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  color: white;
+  box-shadow: 0 8px 25px rgba(239, 68, 68, 0.4);
+}
+
+@keyframes messageSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Cartes révélées */
+.revealed-section {
+  text-align: center;
+  width: 100%;
+}
+
+.revealed-section h3 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.revealed-cards {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.revealed-card {
+  width: 60px;
+  height: 80px;
+  border-radius: 8px;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+/* Actions */
+.actions-section {
+  text-align: center;
+  width: 100%;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.player-selection {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.player-selection p {
+  margin: 0 0 0.75rem;
+  font-weight: 500;
+}
+
+.player-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* Chat sidebar */
+.chat-sidebar {
+  grid-area: chat;
+  width: 320px;
+  background: var(--surface);
+  backdrop-filter: blur(15px);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.chat-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.chat-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.chat-message {
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.035);
+  border-radius: 8px;
+  border-left: 3px solid transparent;
+}
+
+.chat-message.system {
+  opacity: 0.8;
+  font-style: italic;
+  background: rgba(196, 181, 253, 0.08);
+  border-left-color: rgba(196, 181, 253, 0.45);
+}
+
+.message-author {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--accent-2);
+  margin-right: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.message-avatar {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(236, 233, 254, 0.14);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  flex: 0 0 auto;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.message-author-name {
+  display: inline-flex;
+  align-items: center;
+}
+
+.message-content {
+  display: block;
+}
+
+.chat-input {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.chat-input input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.chat-input input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.chat-input input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Main du joueur (bas) - pas de fixed/absolute */
+.player-hand-bar {
+  grid-area: hand;
+  height: 132px;
+  background: var(--surface);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--border-soft);
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  gap: 16px;
+  border-radius: 14px;
+  min-width: 0;
+}
+
+.player-hand-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.hand-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.hand-count {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.trio-count {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 0.4rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.my-trios-display {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.my-trio-mini {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Cartes de la main - système d'inspection amélioré */
+.player-hand-cards {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.player-hand-card {
+  width: 72px;
+  height: 104px;
+  font-weight: 800;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.player-hand-card.hovered {
+  transform: translateY(-6px);
+  z-index: 2;
+}
+
+/* Messages d'erreur */
+.error-message {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #ef4444;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  font-weight: 500;
+  z-index: 1001;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  #game-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr auto auto;
+    grid-template-areas:
+      "header"
+      "players"
+      "center"
+      "chat"
+      "hand";
+  }
+
+  .chat-sidebar {
+    width: auto;
+    min-height: 220px;
+  }
+
+  .opponents-section {
+    flex-direction: row;
+    overflow: auto;
+  }
+
+  .opponent-card {
+    min-width: 240px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    padding: 12px;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-align: center;
+  }
+
+  #game-container {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .center-cards {
+    --center-card-w: 80px;
+    --center-card-h: 120px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .action-buttons .btn {
+    width: 100%;
+  }
+
+  .player-hand-bar {
+    height: 120px;
+    padding: 10px 12px;
+  }
+
+  .player-hand-card {
+    width: 60px;
+    height: 90px;
+    font-size: 1.05rem;
+  }
+  
+  .turn-indicator {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .game-message {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .chat-sidebar {
+    min-height: 180px;
+  }
+}
+
+@media (max-width: 480px) {
+  .center-cards {
+    --center-card-w: 76px;
+    --center-card-h: 114px;
+  }
+
+  .player-hand-bar {
+    height: 112px;
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .player-hand-card {
+    width: 54px;
+    height: 82px;
+    font-size: 0.95rem;
+  }
+  
+  .hand-info {
+    font-size: 0.8rem;
+  }
+  
+  .my-trio-mini {
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+  }
+  
+  .turn-indicator,
+  .game-message {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}

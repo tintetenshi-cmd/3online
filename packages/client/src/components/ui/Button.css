@@ -1,0 +1,210 @@
+/* Styles pour le composant Button */
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  user-select: none;
+  outline: none;
+  min-height: 44px; /* mobile touch-friendly */
+  border: 1px solid transparent; /* permet un hover borduré sans shift */
+}
+
+.btn:focus-visible {
+  outline: 2px solid rgba(196, 181, 253, 0.35);
+  outline-offset: 2px;
+}
+
+/* Tailles */
+.btn--small {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  border-radius: 8px;
+  min-height: 40px;
+}
+
+.btn--medium {
+  padding: 12px 24px;
+  font-size: 1rem;
+  min-width: 120px;
+}
+
+.btn--large {
+  padding: 12px 24px;
+  font-size: 1rem;
+  min-width: 160px;
+}
+
+/* Variantes */
+.btn--primary {
+  background:
+    radial-gradient(120% 160% at 20% 10%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(135deg, rgba(168, 85, 247, 0.55) 0%, rgba(196, 181, 253, 0.40) 45%, rgba(124, 58, 237, 0.40) 100%);
+  color: #ffffff;
+  box-shadow: var(--shadow-tight, 0 10px 24px rgba(0, 0, 0, 0.28));
+  border-color: rgba(233, 213, 255, 0.28);
+}
+
+.btn--primary:hover:not(.btn--disabled) {
+  background:
+    radial-gradient(120% 160% at 20% 10%, rgba(255, 255, 255, 0.22), transparent 55%),
+    linear-gradient(135deg, rgba(168, 85, 247, 0.70) 0%, rgba(196, 181, 253, 0.52) 45%, rgba(124, 58, 237, 0.55) 100%);
+  border-color: rgba(233, 213, 255, 0.50); /* bordure visible */
+  box-shadow:
+    0 0 0 3px rgba(233, 213, 255, 0.16),
+    0 18px 44px rgba(0, 0, 0, 0.34);
+  transform: translateY(-2px);
+}
+
+.btn--primary:active:not(.btn--disabled) {
+  transform: translateY(0);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+/* Shine subtil (hover) */
+.btn--primary::after {
+  content: '';
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(
+    120deg,
+    transparent 25%,
+    rgba(255, 255, 255, 0.18) 45%,
+    transparent 65%
+  );
+  transform: translateX(-35%) rotate(8deg);
+  opacity: 0;
+  transition: opacity 0.3s ease, transform 0.6s ease;
+  pointer-events: none;
+}
+
+.btn--primary:hover:not(.btn--disabled)::after {
+  opacity: 1;
+  transform: translateX(25%) rotate(8deg);
+}
+
+.btn--secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+.btn--secondary:hover:not(.btn--disabled) {
+  background: rgba(233, 213, 255, 0.08);
+  border-color: rgba(219, 234, 254, 0.26);
+  box-shadow: 0 0 0 3px rgba(219, 234, 254, 0.08);
+  transform: translateY(-2px);
+}
+
+.btn--danger {
+  background: linear-gradient(135deg, #ff4757 0%, #ff3742 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(255, 71, 87, 0.3);
+}
+
+.btn--danger:hover:not(.btn--disabled) {
+  background: linear-gradient(135deg, #ff3742 0%, #ff2f3a 100%);
+  box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+  transform: translateY(-2px);
+}
+
+.btn--ghost {
+  background: transparent;
+  color: var(--accent-2);
+  border: 1px solid transparent;
+}
+
+.btn--ghost:hover:not(.btn--disabled) {
+  background: rgba(233, 213, 255, 0.06);
+  border-color: var(--border-soft);
+}
+
+/* États */
+.btn--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.btn--loading {
+  cursor: wait;
+}
+
+/* Contenu */
+.btn__content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn__content--hidden {
+  opacity: 0;
+}
+
+/* Spinner de chargement */
+.btn__spinner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Effet de ripple au clic */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn:active:not(.btn--disabled)::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .btn--large {
+    padding: 0.875rem 1.75rem;
+    font-size: 1rem;
+  }
+
+  .btn--medium {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.9375rem;
+  }
+
+  .btn--small {
+    padding: 0.4375rem 0.875rem;
+    font-size: 0.8125rem;
+  }
+}

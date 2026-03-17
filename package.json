@@ -1,0 +1,24 @@
+{
+  "name": "3online",
+  "version": "1.0.0",
+  "description": "Jeu de cartes en ligne inspiré de Trio",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd packages/shared && npm install && cd ../server && npm install && cd ../client && npm install",
+    "build:shared": "cd packages/shared && npm run build",
+    "dev:server": "cd packages/server && npm run dev",
+    "dev:client": "cd packages/client && npm run dev",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "build": "npm run build:shared && cd packages/server && npm run build && cd ../client && npm run build",
+    "start": "cd packages/server && npm start"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "concurrently": "^8.0.0",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
+}
