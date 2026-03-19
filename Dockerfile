@@ -15,18 +15,20 @@ RUN npm ci
 # Copier le code source
 COPY . .
 
-# 1. Build shared
+# 1. Build shared → génère dist/
 RUN cd packages/shared && npm ci && npm run build
 
-# 2. Install server deps (crée node_modules propre)
+# 2. Install server deps
 RUN cd packages/server && npm ci
 
-# 3. Injecter shared APRÈS npm ci (pour ne pas être écrasé)
-RUN mkdir -p /app/packages/server/node_modules/@3online && \
-    cp -r /app/packages/shared /app/packages/server/node_modules/@3online/shared
+# 3. Injecter dist de shared APRÈS npm ci
+RUN mkdir -p /app/packages/server/node_modules/@3online/shared && \
+    cp -r /app/packages/shared/dist /app/packages/server/node_modules/@3online/shared/dist && \
+    cp /app/packages/shared/package.json /app/packages/server/node_modules/@3online/shared/package.json
 
 # 4. Build server
 RUN cd packages/server && npm run build
+
 
 
 # ── Stage de production ──────────────────────────────────────────
