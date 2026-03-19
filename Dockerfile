@@ -22,7 +22,7 @@ COPY . .
 
 # Build (shared d'abord, puis server + client comme en local)
 RUN npm run build:shared
-RUN cd packages/server && npm run build
+RUN npm run build:server
 RUN cd packages/client && npm run build
 
 # === DEBUG : où sont les dist ? ===  ← AJOUTE ÇA
