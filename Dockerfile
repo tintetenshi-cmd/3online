@@ -9,11 +9,12 @@ COPY packages/shared/package*.json ./packages/shared/
 COPY packages/server/package*.json ./packages/server/
 COPY packages/client/package*.json ./packages/client/
 
-# Install racine + tous les packages
 RUN npm ci
 
-# Install explicite dans shared pour garantir uuid et types
+# Install explicite dans chaque package
 RUN cd packages/shared && npm install
+RUN cd packages/server && npm install
+RUN cd packages/client && npm install
 
 # ── Code source ───────────────────────────────────────────────────
 COPY . .
@@ -43,19 +44,11 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 appuser
 
-# Server dist
 COPY --from=builder /app/packages/server/dist ./server/dist
-
-# node_modules prod server
 COPY --from=builder /app/packages/server/node_modules ./server/node_modules
-
-# Shared compilé (runtime)
 COPY --from=builder /app/packages/shared/dist ./server/node_modules/@3online/shared/dist
 COPY --from=builder /app/packages/shared/package.json ./server/node_modules/@3online/shared/package.json
-
-# Client statique
 COPY --from=builder /app/packages/client/dist ./client
-
 COPY --from=builder /app/packages/server/package.json ./server/
 
 USER appuser
