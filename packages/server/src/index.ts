@@ -8,7 +8,7 @@ import { RoomManager } from './room/RoomManager.js';
 import { AIEngine } from './ai/AIEngine.js';
 import { WebSocketGateway } from './websocket/WebSocketGateway.js';
 
-const PORT = process.env.PORT || 3001;
+const PORT = parseInt(process.env.PORT || '3001', 10);
 const CLIENT_URL = process.env.CLIENT_URL;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -17,10 +17,10 @@ const __dirname = path.dirname(__filename);
 
 function resolveClientDistPath(): string | null {
   const candidates = [
-    path.resolve(process.cwd(), 'client'),              // Dockerfile runner: COPY client/ → /app/client
-    path.resolve(__dirname, '../../../client'),          // dist/index.js → ../../.. = /app/client
+    path.resolve(process.cwd(), 'client'),
+    path.resolve(__dirname, '../../../client'),
     path.resolve(__dirname, '../../client'),
-    path.resolve(process.cwd(), 'packages/client/dist'), // fallback local
+    path.resolve(process.cwd(), 'packages/client/dist'),
   ];
 
   for (const candidate of candidates) {
@@ -93,7 +93,6 @@ class Server {
   }
 
   private setupRoutes(): void {
-    // ── Routes API (toujours en premier) ──────────────────────────
     this.app.get('/health', (req, res) => {
       res.json({
         status: 'healthy',
@@ -145,7 +144,6 @@ class Server {
       ].join('\n'));
     });
 
-    // ── Fichiers statiques + SPA fallback (après les routes API) ──
     const clientDistPath = resolveClientDistPath();
 
     if (clientDistPath) {
@@ -153,7 +151,6 @@ class Server {
         maxAge: NODE_ENV === 'production' ? '1d' : 0,
       }));
 
-      // SPA fallback — toutes les routes non-API renvoient index.html
       this.app.get('*', (req, res) => {
         res.sendFile(path.join(clientDistPath, 'index.html'));
       });
@@ -163,7 +160,6 @@ class Server {
       });
     }
 
-    // ── Erreurs globales ──────────────────────────────────────────
     this.app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
       console.error('Erreur serveur:', err);
       res.status(500).json({
@@ -197,11 +193,10 @@ class Server {
       console.log(`🌐 CLIENT_URL: ${CLIENT_URL}`);
       console.log(`📊 Health: http://localhost:${PORT}/health`);
     });
-  
+
     process.on('SIGTERM', () => this.shutdown('SIGTERM'));
     process.on('SIGINT', () => this.shutdown('SIGINT'));
   }
-  
 
   private shutdown(signal: string): void {
     console.log(`\n🛑 Arrêt (${signal})`);
