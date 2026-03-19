@@ -18,12 +18,13 @@ COPY . .
 # 1. Build shared EN PREMIER → génère dist/ + index.d.ts
 RUN cd packages/shared && npm ci && npm run build
 
-# 2. Copier le dist de shared directement dans node_modules du server
-#    → Évite npm link et ses problèmes de symlinks
-RUN cp -r /app/packages/shared /app/packages/server/node_modules/@3online/shared
+# 2. Créer le scope @3online puis copier shared dans node_modules du server
+RUN mkdir -p /app/packages/server/node_modules/@3online && \
+    cp -r /app/packages/shared /app/packages/server/node_modules/@3online/shared
 
-# 3. Build server (shared est maintenant résolu correctement)
+# 3. Build server
 RUN cd packages/server && npm ci && npm run build
+
 
 # 4. Build client
 RUN cd packages/client && npm ci && npm run build
