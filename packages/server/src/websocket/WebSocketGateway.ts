@@ -1,22 +1,15 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
-// Types uniquement depuis @3online/shared
 import {
   ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData,
   UUID, Player, GameState, GameStatus, GameAction, ActionResult,
   ChatMessage, RoomStatus, ConnectionStatus, AvatarType,
 } from '@3online/shared';
-
-// Utils depuis sharedUtils
 import { generateUUID } from '../utils/sharedUtils.js';
-
-
 import { RoomManager } from '../room/RoomManager.js';
 import { GameEngine } from '../game/GameEngine.js';
 import { AIEngine } from '../ai/AIEngine.js';
 
-// AIPlayer LOCAL — n'importe PAS depuis shared pour éviter les conflits de cast
-// On réutilise Player + on ajoute aiDifficulty optionnel
 type LocalAIPlayer = Player & {
   aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
 };
@@ -50,6 +43,7 @@ export class WebSocketGateway {
     this.aiEngine = aiEngine;
 
     const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+
     this.io = new SocketIOServer(httpServer, {
       cors: {
         origin: (origin, callback) => {
@@ -62,7 +56,10 @@ export class WebSocketGateway {
         methods: ['GET', 'POST'],
         credentials: true,
       },
-      transports: ['websocket', 'polling'],
+      transports: ['websocket'],  // ← websocket uniquement, jamais polling
+      pingTimeout: 60000,
+      pingInterval: 25000,
+      connectTimeout: 45000,
     });
 
     this.setupEventHandlers();
@@ -77,8 +74,9 @@ export class WebSocketGateway {
   }
 
   private setupSocketHandlers(socket: Socket): void {
-    // ── createRoom
-    socket.on('createRoom', async (playerName, avatar, settings, callback) => {
+
+    // ── createRoom ───────────────────────────────────────────────
+    socket.on('createRoom', async (playerName, avatar, avatarSeed, nameColor, settings, callback) => {
       try {
         const playerId = generateUUID();
 
@@ -86,6 +84,8 @@ export class WebSocketGateway {
           id: playerId,
           name: playerName,
           avatar: avatar as AvatarType,
+          avatarSeed,
+          nameColor,
           hand: [],
           trios: [],
           isAI: false,
@@ -103,7 +103,8 @@ export class WebSocketGateway {
         await socket.join(roomInfo.id);
         this.connectedPlayers.set(playerId, socket);
 
-        callback({ success: true, roomInfo });
+        // playerId retourné pour que le client sache qui il est
+        callback({ success: true, roomInfo, playerId });
       } catch (error) {
         callback({
           success: false,
@@ -112,8 +113,8 @@ export class WebSocketGateway {
       }
     });
 
-    // ── joinRoom
-    socket.on('joinRoom', async (roomCode, playerName, avatar, callback) => {
+    // ── joinRoom ─────────────────────────────────────────────────
+    socket.on('joinRoom', async (roomCode, playerName, avatar, avatarSeed, nameColor, callback) => {
       try {
         const playerId = generateUUID();
 
@@ -121,6 +122,8 @@ export class WebSocketGateway {
           id: playerId,
           name: playerName,
           avatar: avatar as AvatarType,
+          avatarSeed,
+          nameColor,
           hand: [],
           trios: [],
           isAI: false,
@@ -143,7 +146,8 @@ export class WebSocketGateway {
           this.broadcastToRoom(result.roomState.info.id, 'roomUpdated', result.roomState);
         }
 
-        callback(result);
+        // playerId retourné pour que le client sache qui il est
+        callback({ ...result, playerId });
       } catch (error) {
         callback({
           success: false,
@@ -152,7 +156,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── leaveRoom
+    // ── leaveRoom ────────────────────────────────────────────────
     socket.on('leaveRoom', async (roomId, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -185,7 +189,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── startGame
+    // ── startGame ────────────────────────────────────────────────
     socket.on('startGame', async (roomId, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -215,7 +219,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── addAIPlayer
+    // ── addAIPlayer ──────────────────────────────────────────────
     socket.on('addAIPlayer', async (roomId, difficulty, callback) => {
       try {
         const aiPlayer = this.roomManager.addAIPlayer(roomId, difficulty);
@@ -235,7 +239,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── removeAIPlayer
+    // ── removeAIPlayer ───────────────────────────────────────────
     socket.on('removeAIPlayer', async (roomId, playerId, callback) => {
       try {
         const success = this.roomManager.removeAIPlayer(roomId, playerId);
@@ -257,7 +261,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── playerAction
+    // ── playerAction ─────────────────────────────────────────────
     socket.on('playerAction', async (roomId, action, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -301,7 +305,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── sendChatMessage
+    // ── sendChatMessage ──────────────────────────────────────────
     socket.on('sendChatMessage', async (roomId, message, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -326,7 +330,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── reconnect
+    // ── reconnect ────────────────────────────────────────────────
     socket.on('reconnect', async (roomId, playerId, token, callback) => {
       try {
         const roomState = this.roomManager.getRoomState(roomId);
@@ -360,6 +364,7 @@ export class WebSocketGateway {
       }
     });
 
+    // ── disconnect ───────────────────────────────────────────────
     socket.on('disconnect', () => this.handleDisconnection(socket));
   }
 
@@ -401,17 +406,14 @@ export class WebSocketGateway {
   }
 
   private async processAITurnIfNeeded(gameState: GameState): Promise<void> {
-    // Trouver le joueur courant comme Player d'abord
     const currentPlayer = gameState.players.find(
       (p: Player) => p.id === gameState.currentPlayerId
     );
 
-    // Vérification explicite avant le cast — isAI est sur Player
     if (!currentPlayer || !currentPlayer.isAI || gameState.gameStatus !== GameStatus.ACTIVE) {
       return;
     }
 
-    // Cast sûr : on sait que isAI === true, Player a id/name/etc.
     const aiPlayer = currentPlayer as LocalAIPlayer;
 
     try {
