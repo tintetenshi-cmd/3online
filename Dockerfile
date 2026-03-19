@@ -1,65 +1,62 @@
-# Multi-stage build pour 3online
 FROM node:18-alpine AS builder
 
-# Dépendances système
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Installer les dépendances (dev incluses pour tsc/build)
+# Copier tous les package.json pour profiter du cache Docker
 COPY package*.json ./
-COPY packages/client/package*.json ./packages/client/
-COPY packages/server/package*.json ./packages/server/
 COPY packages/shared/package*.json ./packages/shared/
+COPY packages/server/package*.json ./packages/server/
+COPY packages/client/package*.json ./packages/client/
+
+# Install racine (workspaces ou non)
 RUN npm ci
 
-# Installer les deps de chaque package (pas de workspaces ici)
-RUN cd packages/shared && npm ci
-RUN cd packages/server && npm ci
-RUN cd packages/client && npm ci
-
-# Copier le code source (sans node_modules grâce au .dockerignore)
+# Copier le code source
 COPY . .
 
-# Build shared
-RUN npm run build:shared
+# 1. Build shared EN PREMIER → génère dist/ + index.d.ts
+RUN cd packages/shared && npm ci && npm run build
 
-# LIEN physique shared → server/node_modules
-RUN cd packages/shared && npm link
-RUN cd packages/server && npm link @3online/shared && npm run build
+# 2. Copier le dist de shared directement dans node_modules du server
+#    → Évite npm link et ses problèmes de symlinks
+RUN cp -r /app/packages/shared /app/packages/server/node_modules/@3online/shared
 
-# Client
-RUN cd packages/client && npm run build
-# === DEBUG : où sont les dist ? ===  ← AJOUTE ÇA
-RUN echo "=== LS packages/server ===" && ls -la /app/packages/server/
-RUN echo "=== FIND server JS files ===" && find /app/packages/server -name "*.js" -o -name "*.d.ts" | head -10 || echo "NO JS/DTS FOUND"
-RUN echo "=== CURRENT DIR ===" && pwd && ls -la /app/
+# 3. Build server (shared est maintenant résolu correctement)
+RUN cd packages/server && npm ci && npm run build
 
-# Ne garder que les deps de prod pour le runner
-RUN npm prune --omit=dev
+# 4. Build client
+RUN cd packages/client && npm ci && npm run build
 
-# Stage de production
+
+# ── Stage de production ──────────────────────────────────────────
 FROM node:18-alpine AS runner
+
 WORKDIR /app
 
-# Créer un utilisateur non-root
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 appuser
 
-# Copie SÉCURISÉE (fonctionne toujours)
-COPY --from=builder /app/packages/server ./server
+# Uniquement le dist compilé du server
+COPY --from=builder /app/packages/server/dist ./server/dist
+
+# node_modules de PROD uniquement (depuis server, pas la racine)
+COPY --from=builder /app/packages/server/node_modules ./server/node_modules
+
+# Le shared compilé doit aussi être accessible en runtime
+COPY --from=builder /app/packages/shared/dist ./server/node_modules/@3online/shared/dist
+COPY --from=builder /app/packages/shared/package.json ./server/node_modules/@3online/shared/package.json
+
+# Client buildé (servi en statique)
 COPY --from=builder /app/packages/client/dist ./client
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./
 
-# Changer les permissions
-USER nextjs
+COPY --from=builder /app/packages/server/package.json ./server/
 
-# Exposer le port
+USER appuser
+
 EXPOSE 3001
-
-# Variables d'environnement
 ENV NODE_ENV=production
 ENV PORT=3001
 
-# Commande de démarrage
-CMD ["node", "server/index.js"]
+# Lance depuis dist/
+CMD ["node", "server/dist/index.js"]
