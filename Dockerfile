@@ -20,11 +20,15 @@ RUN cd packages/client && npm ci
 # Copier le code source (sans node_modules grâce au .dockerignore)
 COPY . .
 
-# Build (shared d'abord, puis server + client comme en local)
+# Build shared
 RUN npm run build:shared
-RUN npm run build:server
-RUN cd packages/client && npm run build
 
+# LIEN physique shared → server/node_modules
+RUN cd packages/shared && npm link
+RUN cd packages/server && npm link @3online/shared && npm run build
+
+# Client
+RUN cd packages/client && npm run build
 # === DEBUG : où sont les dist ? ===  ← AJOUTE ÇA
 RUN echo "=== LS packages/server ===" && ls -la /app/packages/server/
 RUN echo "=== FIND server JS files ===" && find /app/packages/server -name "*.js" -o -name "*.d.ts" | head -10 || echo "NO JS/DTS FOUND"
