@@ -6,12 +6,12 @@
   "scripts": {
     "install:all": "npm install && cd packages/shared && npm install && cd ../server && npm install && cd ../client && npm install",
     "build:shared": "cd packages/shared && npm run build",
-    "build:server": "tsc -p packages/server/tsconfig.json",  ← AJOUTE ÇA
-    "build:client": "cd packages/client && npm run build",   ← AJOUTE ÇA
+    "build:server": "tsc -p packages/server/tsconfig.json",
+    "build:client": "cd packages/client && npm run build",
     "dev:server": "cd packages/server && npm run dev",
     "dev:client": "cd packages/client && npm run dev",
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "build": "npm run build:shared && npm run build:server && npm run build:client",  ← MODIFIE ÇA
+    "build": "npm run build:shared && npm run build:server && npm run build:client",
     "start": "cd packages/server && npm start"
   },
   "devDependencies": {
