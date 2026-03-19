@@ -1,6 +1,5 @@
 /**
  * Passerelle WebSocket pour la communication temps réel
- * Gère les connexions, événements et diffusion des messages
  */
 
 import { Server as SocketIOServer, Socket } from 'socket.io';
@@ -13,20 +12,37 @@ import {
   UUID,
   Player,
   GameStatus,
-  GameAction,
-  ActionResult,
-  ChatMessage,
   RoomStatus,
   ConnectionStatus,
-  generateUUID,
 } from '@3online/shared';
 
 import { RoomManager } from '../room/RoomManager.js';
 import { GameEngine } from '../game/GameEngine.js';
 import { AIEngine } from '../ai/AIEngine.js';
 
-// Interface locale pour GameState retourné par GameEngine
-// (à remplacer par le vrai type si exporté par @3online/shared)
+// ── Types locaux (fallback si non exportés par shared) ────────────
+
+interface GameAction {
+  actionType: string;
+  [key: string]: unknown;
+}
+
+interface ActionResult {
+  success: boolean;
+  message?: string;
+  newGameState?: GameState;
+  revealedCard?: unknown;
+  trioFormed?: unknown;
+  victoryResult?: { hasWon: boolean; [key: string]: unknown };
+}
+
+interface ChatMessage {
+  id: string;
+  playerId: UUID;
+  message: string;
+  timestamp: number;
+}
+
 interface GameState {
   gameId: string;
   roomId: string;
@@ -36,8 +52,6 @@ interface GameState {
   [key: string]: unknown;
 }
 
-// Interface locale pour AIPlayer (étend Player avec les champs IA)
-// Fallback si Player pose toujours problème à l'import
 type AIPlayer = {
   id: UUID;
   name: string;
@@ -52,14 +66,19 @@ type AIPlayer = {
   aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
 };
 
-
-
-// Interface locale pour la décision IA
 interface AIDecision {
   action: GameAction;
   confidence: number;
   reasoning?: string;
 }
+
+// ── Utilitaire UUID natif (pas besoin de shared) ──────────────────
+
+function generateUUID(): UUID {
+  return crypto.randomUUID() as UUID;
+}
+
+// ─────────────────────────────────────────────────────────────────
 
 export class WebSocketGateway {
   private io: SocketIOServer<
@@ -88,12 +107,10 @@ export class WebSocketGateway {
       cors: {
         origin: (origin, callback) => {
           if (!origin) return callback(null, true);
-
           const isLocal =
             /^http:\/\/localhost:\d+$/.test(origin) ||
             /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
           const isConfigured = origin === clientUrl;
-
           return callback(null, isLocal || isConfigured);
         },
         methods: ['GET', 'POST'],
@@ -108,12 +125,10 @@ export class WebSocketGateway {
   private setupEventHandlers(): void {
     this.io.on('connection', (socket) => {
       console.log(`Client connecté: ${socket.id}`);
-
       socket.data = {
         isAuthenticated: false,
         connectionTime: Date.now(),
       };
-
       this.setupSocketHandlers(socket);
     });
   }
@@ -188,7 +203,6 @@ export class WebSocketGateway {
           this.broadcastToRoom(result.roomState.info.id, 'playerJoined', player);
           this.broadcastToRoom(result.roomState.info.id, 'roomUpdated', result.roomState);
 
-          // Attacher playerId sans casser le type via extension ciblée
           const responseWithId = result as typeof result & { playerId: UUID };
           responseWithId.playerId = playerId;
 
@@ -218,7 +232,6 @@ export class WebSocketGateway {
 
         if (result.success) {
           await socket.leave(roomId);
-
           this.connectedPlayers.delete(playerId);
           socket.data.playerId = undefined;
           socket.data.roomId = undefined;
@@ -254,10 +267,8 @@ export class WebSocketGateway {
         if (startResult.success) {
           const roomState = this.roomManager.getRoomState(roomId);
           if (roomState) {
-            const gameId = roomId;
-            const gameState = this.gameEngine.initializeGame(gameId, roomId, roomState.players);
-
-            console.log(`Jeu initialisé avec gameId: ${gameId}`);
+            const gameState = this.gameEngine.initializeGame(roomId, roomId, roomState.players);
+            console.log(`Jeu initialisé avec gameId: ${roomId}`);
 
             this.broadcastToRoom(roomId, 'gameStarted', gameState);
             this.broadcastToRoom(roomId, 'roomUpdated', roomState);
@@ -303,7 +314,6 @@ export class WebSocketGateway {
         if (success) {
           const roomState = this.roomManager.getRoomState(roomId);
           this.broadcastToRoom(roomId, 'aiPlayerRemoved', playerId);
-
           if (roomState) {
             this.broadcastToRoom(roomId, 'roomUpdated', roomState);
           }
@@ -313,8 +323,7 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          error:
-            error instanceof Error ? error.message : "Erreur lors de la suppression de l'IA",
+          error: error instanceof Error ? error.message : "Erreur lors de la suppression de l'IA",
         });
       }
     });
@@ -330,7 +339,6 @@ export class WebSocketGateway {
 
         const gameState = this.gameEngine.getCurrentGameState(roomId);
         if (!gameState) {
-          console.log(`Partie non trouvée pour roomId: ${roomId}`);
           callback({ success: false, message: 'Partie non trouvée' });
           return;
         }
@@ -345,11 +353,9 @@ export class WebSocketGateway {
           if (result.revealedCard) {
             this.broadcastToRoom(roomId, 'cardRevealed', result.revealedCard, playerId);
           }
-
           if (result.trioFormed) {
             this.broadcastToRoom(roomId, 'trioFormed', result.trioFormed, playerId);
           }
-
           if (result.victoryResult?.hasWon) {
             this.broadcastToRoom(roomId, 'gameEnded', result.victoryResult);
           } else if (result.newGameState.currentPlayerId !== playerId) {
@@ -414,7 +420,6 @@ export class WebSocketGateway {
         socket.data.isAuthenticated = true;
 
         await socket.join(roomId);
-
         this.roomManager.updatePlayerConnectionStatus(playerId, ConnectionStatus.CONNECTED);
         this.connectedPlayers.set(playerId, socket);
 
@@ -491,24 +496,18 @@ export class WebSocketGateway {
     );
 
     if (currentPlayer?.isAI && gameState.gameStatus === 'ACTIVE') {
-      console.log(`Tour IA détecté pour ${currentPlayer.name}`);
       try {
         const availableActions = this.gameEngine.getValidActions(
           gameState.gameId,
           currentPlayer.id
         );
-        console.log(`Actions disponibles pour l'IA: ${availableActions.length}`);
 
         if (availableActions.length > 0) {
-          console.log(`L'IA ${currentPlayer.name} va prendre une décision...`);
-
           const decision: AIDecision = await this.aiEngine.makeDecision(
             gameState,
             currentPlayer,
             { availableActions }
           );
-
-          console.log(`Décision prise par l'IA: ${decision.action.actionType}`);
 
           const thinkingTime = this.calculateAIThinkingTime(currentPlayer, decision);
 
@@ -526,8 +525,6 @@ export class WebSocketGateway {
             decision.action
           );
 
-          console.log(`Résultat de l'action IA: ${result.success}`);
-
           if (result.success && result.newGameState) {
             this.broadcastToRoom(gameState.roomId, 'aiAction', {
               playerId: currentPlayer.id,
@@ -540,27 +537,12 @@ export class WebSocketGateway {
             this.broadcastToRoom(gameState.roomId, 'gameStateUpdated', result.newGameState);
 
             if (result.revealedCard) {
-              this.broadcastToRoom(
-                gameState.roomId,
-                'cardRevealed',
-                result.revealedCard,
-                currentPlayer.id
-              );
+              this.broadcastToRoom(gameState.roomId, 'cardRevealed', result.revealedCard, currentPlayer.id);
             }
-
             if (result.trioFormed) {
-              this.broadcastToRoom(
-                gameState.roomId,
-                'trioFormed',
-                result.trioFormed,
-                currentPlayer.id
-              );
+              this.broadcastToRoom(gameState.roomId, 'trioFormed', result.trioFormed, currentPlayer.id);
             }
-
-            if (
-              result.newGameState.currentPlayerId !== currentPlayer.id &&
-              !result.trioFormed
-            ) {
+            if (result.newGameState.currentPlayerId !== currentPlayer.id && !result.trioFormed) {
               this.broadcastToRoom(gameState.roomId, 'trioFailed', currentPlayer.id);
             }
 
@@ -568,28 +550,17 @@ export class WebSocketGateway {
               this.broadcastToRoom(gameState.roomId, 'gameEnded', result.victoryResult);
             } else {
               if (result.newGameState.currentPlayerId !== currentPlayer.id) {
-                this.broadcastToRoom(
-                  gameState.roomId,
-                  'turnChanged',
-                  result.newGameState.currentPlayerId
-                );
+                this.broadcastToRoom(gameState.roomId, 'turnChanged', result.newGameState.currentPlayerId);
               }
               await this.processAITurnIfNeeded(result.newGameState);
             }
           } else {
             console.error(`Échec de l'action IA: ${result.message}`);
           }
-        } else {
-          console.log(`Aucune action disponible pour l'IA ${currentPlayer.name}`);
         }
       } catch (error) {
         console.error('Erreur lors du traitement du tour IA:', error);
       }
-    } else {
-      console.log(
-        `Pas de tour IA nécessaire - currentPlayer: ${currentPlayer?.name}, ` +
-          `isAI: ${currentPlayer?.isAI}, gameStatus: ${gameState.gameStatus}`
-      );
     }
   }
 
@@ -602,14 +573,10 @@ export class WebSocketGateway {
 
     const difficulty = aiPlayer.aiDifficulty ?? 'MEDIUM';
     const timeRange = baseTimes[difficulty] ?? baseTimes['MEDIUM'];
-
     let thinkingTime = timeRange.min + Math.random() * (timeRange.max - timeRange.min);
 
-    if (decision.confidence < 0.5) {
-      thinkingTime *= 1.5;
-    } else if (decision.confidence > 0.8) {
-      thinkingTime *= 0.7;
-    }
+    if (decision.confidence < 0.5) thinkingTime *= 1.5;
+    else if (decision.confidence > 0.8) thinkingTime *= 0.7;
 
     return Math.round(thinkingTime);
   }
@@ -619,19 +586,14 @@ export class WebSocketGateway {
     authenticatedPlayers: number;
     roomsWithPlayers: number;
   } {
-    const totalConnections = this.io.sockets.sockets.size;
-    const authenticatedPlayers = this.connectedPlayers.size;
-
-    const roomsWithPlayers = new Set(
-      Array.from(this.connectedPlayers.values())
-        .map((socket) => socket.data.roomId)
-        .filter((id): id is string => Boolean(id))
-    ).size;
-
     return {
-      totalConnections,
-      authenticatedPlayers,
-      roomsWithPlayers,
+      totalConnections: this.io.sockets.sockets.size,
+      authenticatedPlayers: this.connectedPlayers.size,
+      roomsWithPlayers: new Set(
+        Array.from(this.connectedPlayers.values())
+          .map((s) => s.data.roomId)
+          .filter((id): id is string => Boolean(id))
+      ).size,
     };
   }
 
