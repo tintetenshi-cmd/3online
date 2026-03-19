@@ -28,43 +28,34 @@ const GameLobby: React.FC = () => {
   const [maxPlayers, setMaxPlayers] = useState(4)
   const [allowAI, setAllowAI] = useState(true)
   const [chatMessage, setChatMessage] = useState('')
-  const [showPlayerSetup, setShowPlayerSetup] = useState(false)
+  const [showPlayerSetup, setShowPlayerSetup] = useState(!state.playerInfo)
   const [showAIMenu, setShowAIMenu] = useState(false)
 
-  // ← Empêche connectSocket d'être rappelé en boucle
   const hasConnected = useRef(false)
 
+  // ── Connexion unique au montage ──────────────────────────────
   useEffect(() => {
-    if (!state.playerInfo) {
-      setShowPlayerSetup(true)
-    }
-  }, [state.playerInfo])
-
-  // ← Une seule tentative de connexion, jamais retriggée par isConnected
-  useEffect(() => {
-    if (state.playerInfo && !hasConnected.current) {
+    if (!hasConnected.current && state.playerInfo) {
       hasConnected.current = true
       connectSocket()
     }
-  }, [state.playerInfo]) // ← connectSocket RETIRÉ des dépendances
+  }, []) // ← tableau vide — jamais retriggé
 
-  // Rejoindre automatiquement si code dans l'URL
+  // ── Rejoindre via URL une fois connecté ──────────────────────
   useEffect(() => {
-    if (urlRoomCode && state.isConnected && state.playerInfo && !state.roomState) {
+    if (urlRoomCode && state.isConnected && !state.roomState) {
       handleJoinRoom(urlRoomCode)
     }
-  }, [urlRoomCode, state.isConnected]) // ← dépendances minimales
+  }, [state.isConnected]) // ← uniquement quand la connexion s'établit
 
-  // Rediriger vers le jeu si la partie commence
+  // ── Redirection vers la partie ───────────────────────────────
   useEffect(() => {
     if (state.gameState && state.roomState) {
       navigate(`/game/${state.roomState.info.id}`)
     }
   }, [state.gameState])
 
-  const handlePlayerSetupComplete = () => {
-    setShowPlayerSetup(false)
-  }
+  const handlePlayerSetupComplete = () => setShowPlayerSetup(false)
 
   const handleCreateRoom = async () => {
     try {
@@ -196,9 +187,7 @@ const GameLobby: React.FC = () => {
                         )
                       })()}
                       {player.isHost && <span className="host-badge">Hôte</span>}
-                      {player.isAI && (
-                        <span className="ai-badge">IA {player.aiDifficulty || 'MEDIUM'}</span>
-                      )}
+                      {player.isAI && <span className="ai-badge">IA {player.aiDifficulty || 'MEDIUM'}</span>}
                     </div>
                     <div className="player-status">
                       <span className={`status-dot status-dot--${player.connectionStatus}`} />
@@ -241,7 +230,7 @@ const GameLobby: React.FC = () => {
             <div className="lobby__chat">
               <h2>Chat</h2>
               <div className="chat-messages">
-                {state.chatMessages.map((message) => {
+                {state.chatMessages.map((message: any) => {
                   const author = state.roomState.players.find((p: any) => p.id === message.playerId)
                   const t = pseudoTextStyle(author?.nameColor)
                   return (
