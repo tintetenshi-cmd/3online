@@ -413,6 +413,8 @@ export interface ServerToClientEvents {
 
   // Chat
   chatMessage: (message: ChatMessage) => void;
+  
+  aiThinking: (data: { playerId: UUID; playerName: string; thinkingTime: number }) => void;
 
   // Erreurs
   error: (message: string) => void;

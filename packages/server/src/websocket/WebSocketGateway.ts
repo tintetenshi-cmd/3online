@@ -22,10 +22,11 @@ import { RoomManager } from '../room/RoomManager.js';
 import { GameEngine } from '../game/GameEngine.js';
 import { AIEngine } from '../ai/AIEngine.js';
 
-// Types locaux uniquement pour ce qui n'est pas dans shared
-interface AIPlayer extends Player {
+// AIPlayer LOCAL — n'importe PAS depuis shared pour éviter les conflits de cast
+// On réutilise Player + on ajoute aiDifficulty optionnel
+type LocalAIPlayer = Player & {
   aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
-}
+};
 
 interface AIDecision {
   action: GameAction;
@@ -83,7 +84,7 @@ export class WebSocketGateway {
   }
 
   private setupSocketHandlers(socket: Socket): void {
-    // ── createRoom — signature shared: (playerName, avatar, settings, callback)
+    // ── createRoom
     socket.on('createRoom', async (playerName, avatar, settings, callback) => {
       try {
         const playerId = generateUUID();
@@ -118,7 +119,7 @@ export class WebSocketGateway {
       }
     });
 
-    // ── joinRoom — signature shared: (roomCode, playerName, avatar, callback)
+    // ── joinRoom
     socket.on('joinRoom', async (roomCode, playerName, avatar, callback) => {
       try {
         const playerId = generateUUID();
@@ -236,7 +237,7 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : "Erreur ajout IA",
+          error: error instanceof Error ? error.message : 'Erreur ajout IA',
         });
       }
     });
@@ -258,7 +259,7 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : "Erreur suppression IA",
+          error: error instanceof Error ? error.message : 'Erreur suppression IA',
         });
       }
     });
@@ -302,7 +303,7 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          message: error instanceof Error ? error.message : "Erreur action",
+          message: error instanceof Error ? error.message : 'Erreur action',
         });
       }
     });
@@ -327,7 +328,7 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : "Erreur envoi",
+          error: error instanceof Error ? error.message : 'Erreur envoi',
         });
       }
     });
@@ -407,30 +408,37 @@ export class WebSocketGateway {
   }
 
   private async processAITurnIfNeeded(gameState: GameState): Promise<void> {
+    // Trouver le joueur courant comme Player d'abord
     const currentPlayer = gameState.players.find(
       (p: Player) => p.id === gameState.currentPlayerId
-    ) as AIPlayer | undefined;
+    );
 
-    if (!currentPlayer?.isAI || gameState.gameStatus !== GameStatus.ACTIVE) return;
+    // Vérification explicite avant le cast — isAI est sur Player
+    if (!currentPlayer || !currentPlayer.isAI || gameState.gameStatus !== GameStatus.ACTIVE) {
+      return;
+    }
+
+    // Cast sûr : on sait que isAI === true, Player a id/name/etc.
+    const aiPlayer = currentPlayer as LocalAIPlayer;
 
     try {
       const availableActions = this.gameEngine.getValidActions(
         gameState.gameId,
-        currentPlayer.id
+        aiPlayer.id
       );
       if (availableActions.length === 0) return;
 
       const decision: AIDecision = await this.aiEngine.makeDecision(
         gameState,
-        currentPlayer,
+        aiPlayer as unknown as import('@3online/shared').AIPlayer,
         { availableActions }
       );
 
-      const thinkingTime = this.calculateAIThinkingTime(currentPlayer, decision);
+      const thinkingTime = this.calculateAIThinkingTime(aiPlayer, decision);
 
       this.broadcastToRoom(gameState.roomId, 'aiThinking', {
-        playerId: currentPlayer.id,
-        playerName: currentPlayer.name,
+        playerId: aiPlayer.id,
+        playerName: aiPlayer.name,
         thinkingTime,
       });
 
@@ -438,7 +446,7 @@ export class WebSocketGateway {
 
       const result = this.gameEngine.processCardReveal(
         gameState.gameId,
-        currentPlayer.id,
+        aiPlayer.id,
         decision.action
       );
 
@@ -447,19 +455,19 @@ export class WebSocketGateway {
         this.broadcastToRoom(gameState.roomId, 'gameStateUpdated', result.newGameState);
 
         if (result.revealedCard) {
-          this.broadcastToRoom(gameState.roomId, 'cardRevealed', result.revealedCard, currentPlayer.id);
+          this.broadcastToRoom(gameState.roomId, 'cardRevealed', result.revealedCard, aiPlayer.id);
         }
         if (result.trioFormed) {
-          this.broadcastToRoom(gameState.roomId, 'trioFormed', result.trioFormed, currentPlayer.id);
+          this.broadcastToRoom(gameState.roomId, 'trioFormed', result.trioFormed, aiPlayer.id);
         }
-        if (result.newGameState.currentPlayerId !== currentPlayer.id && !result.trioFormed) {
-          this.broadcastToRoom(gameState.roomId, 'trioFailed', currentPlayer.id);
+        if (result.newGameState.currentPlayerId !== aiPlayer.id && !result.trioFormed) {
+          this.broadcastToRoom(gameState.roomId, 'trioFailed', aiPlayer.id);
         }
 
         if (result.victoryResult?.hasWon) {
           this.broadcastToRoom(gameState.roomId, 'gameEnded', result.victoryResult);
         } else {
-          if (result.newGameState.currentPlayerId !== currentPlayer.id) {
+          if (result.newGameState.currentPlayerId !== aiPlayer.id) {
             this.broadcastToRoom(gameState.roomId, 'turnChanged', result.newGameState.currentPlayerId);
           }
           await this.processAITurnIfNeeded(result.newGameState);
@@ -470,11 +478,11 @@ export class WebSocketGateway {
     }
   }
 
-  private calculateAIThinkingTime(aiPlayer: AIPlayer, decision: AIDecision): number {
+  private calculateAIThinkingTime(aiPlayer: LocalAIPlayer, decision: AIDecision): number {
     const baseTimes: Record<string, { min: number; max: number }> = {
-      EASY: { min: 800, max: 2000 },
+      EASY:   { min: 800,  max: 2000 },
       MEDIUM: { min: 1200, max: 3000 },
-      HARD: { min: 1500, max: 4000 },
+      HARD:   { min: 1500, max: 4000 },
     };
 
     const timeRange = baseTimes[aiPlayer.aiDifficulty ?? 'MEDIUM'] ?? baseTimes['MEDIUM'];
