@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "rootDir": "./src",
-    "moduleResolution": "node16",  // ← MÊME que shared
+    "module": "Node16",
+    "moduleResolution": "node16",
     "baseUrl": ".",
     "paths": {
       "@3online/shared": ["../../packages/shared/dist/index"],  // ← CRITIQUE

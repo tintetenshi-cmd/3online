@@ -3,19 +3,19 @@
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022"],
-    "module": "ESNext",
+    "module": "Node16",           // ← CHANGÉ : ESNext → Node16
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node16",  // ← CHANGÉ : de "bundler" → "node16"
+    "moduleResolution": "node16",
     "allowImportingTsExtensions": false,
     "noEmit": false,
     "declaration": true,
     "composite": true,
-    "declarationMap": true        // ← AJOUTÉ : aide IDE
+    "declarationMap": true
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]
