@@ -1,7 +1,3 @@
-/**
- * Passerelle WebSocket pour la communication temps réel
- */
-
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import {
@@ -11,74 +7,31 @@ import {
   SocketData,
   UUID,
   Player,
+  GameState,
   GameStatus,
+  GameAction,
+  ActionResult,
+  ChatMessage,
   RoomStatus,
   ConnectionStatus,
+  AvatarType,
+  generateUUID,
 } from '@3online/shared';
 
 import { RoomManager } from '../room/RoomManager.js';
 import { GameEngine } from '../game/GameEngine.js';
 import { AIEngine } from '../ai/AIEngine.js';
 
-// ── Types locaux (fallback si non exportés par shared) ────────────
-
-interface GameAction {
-  actionType: string;
-  [key: string]: unknown;
-}
-
-interface ActionResult {
-  success: boolean;
-  message?: string;
-  newGameState?: GameState;
-  revealedCard?: unknown;
-  trioFormed?: unknown;
-  victoryResult?: { hasWon: boolean; [key: string]: unknown };
-}
-
-interface ChatMessage {
-  id: string;
-  playerId: UUID;
-  message: string;
-  timestamp: number;
-}
-
-interface GameState {
-  gameId: string;
-  roomId: string;
-  players: Player[];
-  currentPlayerId: UUID;
-  gameStatus: GameStatus | string;
-  [key: string]: unknown;
-}
-
-type AIPlayer = {
-  id: UUID;
-  name: string;
-  avatar: string;
-  avatarSeed: string;
-  nameColor: string;
-  hand: unknown[];
-  trios: unknown[];
-  isAI: boolean;
-  connectionStatus: ConnectionStatus;
-  score: { trios: number; victories: number };
+// Types locaux uniquement pour ce qui n'est pas dans shared
+interface AIPlayer extends Player {
   aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
-};
+}
 
 interface AIDecision {
   action: GameAction;
   confidence: number;
   reasoning?: string;
 }
-
-// ── Utilitaire UUID natif (pas besoin de shared) ──────────────────
-
-function generateUUID(): UUID {
-  return crypto.randomUUID() as UUID;
-}
-
-// ─────────────────────────────────────────────────────────────────
 
 export class WebSocketGateway {
   private io: SocketIOServer<
@@ -110,8 +63,7 @@ export class WebSocketGateway {
           const isLocal =
             /^http:\/\/localhost:\d+$/.test(origin) ||
             /^http:\/\/127\.0\.0\.1:\d+$/.test(origin);
-          const isConfigured = origin === clientUrl;
-          return callback(null, isLocal || isConfigured);
+          return callback(null, isLocal || origin === clientUrl);
         },
         methods: ['GET', 'POST'],
         credentials: true,
@@ -125,26 +77,21 @@ export class WebSocketGateway {
   private setupEventHandlers(): void {
     this.io.on('connection', (socket) => {
       console.log(`Client connecté: ${socket.id}`);
-      socket.data = {
-        isAuthenticated: false,
-        connectionTime: Date.now(),
-      };
+      socket.data = { isAuthenticated: false, connectionTime: Date.now() };
       this.setupSocketHandlers(socket);
     });
   }
 
   private setupSocketHandlers(socket: Socket): void {
-    // ── createRoom ────────────────────────────────────────────────
-    socket.on('createRoom', async (playerName, avatar, avatarSeed, nameColor, settings, callback) => {
+    // ── createRoom — signature shared: (playerName, avatar, settings, callback)
+    socket.on('createRoom', async (playerName, avatar, settings, callback) => {
       try {
         const playerId = generateUUID();
 
         const player: Player = {
           id: playerId,
           name: playerName,
-          avatar,
-          avatarSeed,
-          nameColor,
+          avatar: avatar as AvatarType,
           hand: [],
           trios: [],
           isAI: false,
@@ -162,26 +109,24 @@ export class WebSocketGateway {
         await socket.join(roomInfo.id);
         this.connectedPlayers.set(playerId, socket);
 
-        callback({ success: true, roomInfo, playerId });
+        callback({ success: true, roomInfo });
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : 'Erreur lors de la création de la salle',
+          error: error instanceof Error ? error.message : 'Erreur création salle',
         });
       }
     });
 
-    // ── joinRoom ──────────────────────────────────────────────────
-    socket.on('joinRoom', async (roomCode, playerName, avatar, avatarSeed, nameColor, callback) => {
+    // ── joinRoom — signature shared: (roomCode, playerName, avatar, callback)
+    socket.on('joinRoom', async (roomCode, playerName, avatar, callback) => {
       try {
         const playerId = generateUUID();
 
         const player: Player = {
           id: playerId,
           name: playerName,
-          avatar,
-          avatarSeed,
-          nameColor,
+          avatar: avatar as AvatarType,
           hand: [],
           trios: [],
           isAI: false,
@@ -202,24 +147,18 @@ export class WebSocketGateway {
 
           this.broadcastToRoom(result.roomState.info.id, 'playerJoined', player);
           this.broadcastToRoom(result.roomState.info.id, 'roomUpdated', result.roomState);
-
-          const responseWithId = result as typeof result & { playerId: UUID };
-          responseWithId.playerId = playerId;
-
-          callback(responseWithId);
-          return;
         }
 
         callback(result);
       } catch (error) {
         callback({
           success: false,
-          message: error instanceof Error ? error.message : 'Erreur lors de la jointure',
+          message: error instanceof Error ? error.message : 'Erreur jointure',
         });
       }
     });
 
-    // ── leaveRoom ─────────────────────────────────────────────────
+    // ── leaveRoom
     socket.on('leaveRoom', async (roomId, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -238,7 +177,6 @@ export class WebSocketGateway {
           socket.data.isAuthenticated = false;
 
           this.broadcastToRoom(roomId, 'playerLeft', playerId, socket.data.playerName ?? 'Joueur');
-
           if (result.roomState) {
             this.broadcastToRoom(roomId, 'roomUpdated', result.roomState);
           }
@@ -248,12 +186,12 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          message: error instanceof Error ? error.message : 'Erreur lors de la sortie',
+          message: error instanceof Error ? error.message : 'Erreur sortie',
         });
       }
     });
 
-    // ── startGame ─────────────────────────────────────────────────
+    // ── startGame
     socket.on('startGame', async (roomId, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -268,11 +206,8 @@ export class WebSocketGateway {
           const roomState = this.roomManager.getRoomState(roomId);
           if (roomState) {
             const gameState = this.gameEngine.initializeGame(roomId, roomId, roomState.players);
-            console.log(`Jeu initialisé avec gameId: ${roomId}`);
-
             this.broadcastToRoom(roomId, 'gameStarted', gameState);
             this.broadcastToRoom(roomId, 'roomUpdated', roomState);
-
             await this.processAITurnIfNeeded(gameState);
           }
         }
@@ -281,12 +216,12 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          message: error instanceof Error ? error.message : 'Erreur lors du démarrage',
+          message: error instanceof Error ? error.message : 'Erreur démarrage',
         });
       }
     });
 
-    // ── addAIPlayer ───────────────────────────────────────────────
+    // ── addAIPlayer
     socket.on('addAIPlayer', async (roomId, difficulty, callback) => {
       try {
         const aiPlayer = this.roomManager.addAIPlayer(roomId, difficulty);
@@ -301,12 +236,12 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : "Erreur lors de l'ajout de l'IA",
+          error: error instanceof Error ? error.message : "Erreur ajout IA",
         });
       }
     });
 
-    // ── removeAIPlayer ────────────────────────────────────────────
+    // ── removeAIPlayer
     socket.on('removeAIPlayer', async (roomId, playerId, callback) => {
       try {
         const success = this.roomManager.removeAIPlayer(roomId, playerId);
@@ -323,12 +258,12 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : "Erreur lors de la suppression de l'IA",
+          error: error instanceof Error ? error.message : "Erreur suppression IA",
         });
       }
     });
 
-    // ── playerAction ──────────────────────────────────────────────
+    // ── playerAction
     socket.on('playerAction', async (roomId, action, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -342,8 +277,6 @@ export class WebSocketGateway {
           callback({ success: false, message: 'Partie non trouvée' });
           return;
         }
-
-        console.log(`Action reçue de ${playerId} dans la partie ${roomId}:`, action.actionType);
 
         const result = this.gameEngine.processCardReveal(gameState.gameId, playerId, action);
 
@@ -369,12 +302,12 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          message: error instanceof Error ? error.message : "Erreur lors de l'action",
+          message: error instanceof Error ? error.message : "Erreur action",
         });
       }
     });
 
-    // ── sendChatMessage ───────────────────────────────────────────
+    // ── sendChatMessage
     socket.on('sendChatMessage', async (roomId, message, callback) => {
       try {
         const playerId = socket.data.playerId;
@@ -394,12 +327,12 @@ export class WebSocketGateway {
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : "Erreur lors de l'envoi",
+          error: error instanceof Error ? error.message : "Erreur envoi",
         });
       }
     });
 
-    // ── reconnect ─────────────────────────────────────────────────
+    // ── reconnect
     socket.on('reconnect', async (roomId, playerId, token, callback) => {
       try {
         const roomState = this.roomManager.getRoomState(roomId);
@@ -422,35 +355,26 @@ export class WebSocketGateway {
         await socket.join(roomId);
         this.roomManager.updatePlayerConnectionStatus(playerId, ConnectionStatus.CONNECTED);
         this.connectedPlayers.set(playerId, socket);
-
         this.broadcastToRoom(roomId, 'playerReconnected', playerId, player.name);
 
         callback({ success: true, roomState });
       } catch (error) {
         callback({
           success: false,
-          error: error instanceof Error ? error.message : 'Erreur lors de la reconnexion',
+          error: error instanceof Error ? error.message : 'Erreur reconnexion',
         });
       }
     });
 
-    // ── disconnect ────────────────────────────────────────────────
-    socket.on('disconnect', () => {
-      this.handleDisconnection(socket);
-    });
+    socket.on('disconnect', () => this.handleDisconnection(socket));
   }
 
   private handleDisconnection(socket: Socket): void {
-    console.log(`Client déconnecté: ${socket.id}`);
-
-    const playerId = socket.data.playerId;
-    const roomId = socket.data.roomId;
-    const playerName = socket.data.playerName;
+    const { playerId, roomId, playerName } = socket.data;
 
     if (playerId && roomId) {
       this.roomManager.updatePlayerConnectionStatus(playerId, ConnectionStatus.DISCONNECTED);
       this.connectedPlayers.delete(playerId);
-
       this.broadcastToRoom(roomId, 'playerDisconnected', playerId, playerName ?? 'Joueur');
 
       setTimeout(() => {
@@ -479,10 +403,7 @@ export class WebSocketGateway {
     event: T,
     ...args: Parameters<ServerToClientEvents[T]>
   ): void {
-    const socket = this.connectedPlayers.get(playerId);
-    if (socket) {
-      socket.emit(event, ...args);
-    }
+    this.connectedPlayers.get(playerId)?.emit(event, ...args);
   }
 
   private async processAITurnIfNeeded(gameState: GameState): Promise<void> {
@@ -490,77 +411,62 @@ export class WebSocketGateway {
       (p: Player) => p.id === gameState.currentPlayerId
     ) as AIPlayer | undefined;
 
-    console.log(
-      `Vérification tour IA - Joueur actuel: ${currentPlayer?.name}, ` +
-        `isAI: ${currentPlayer?.isAI}, gameStatus: ${gameState.gameStatus}`
-    );
+    if (!currentPlayer?.isAI || gameState.gameStatus !== GameStatus.ACTIVE) return;
 
-    if (currentPlayer?.isAI && gameState.gameStatus === 'ACTIVE') {
-      try {
-        const availableActions = this.gameEngine.getValidActions(
-          gameState.gameId,
-          currentPlayer.id
-        );
+    try {
+      const availableActions = this.gameEngine.getValidActions(
+        gameState.gameId,
+        currentPlayer.id
+      );
+      if (availableActions.length === 0) return;
 
-        if (availableActions.length > 0) {
-          const decision: AIDecision = await this.aiEngine.makeDecision(
-            gameState,
-            currentPlayer,
-            { availableActions }
-          );
+      const decision: AIDecision = await this.aiEngine.makeDecision(
+        gameState,
+        currentPlayer,
+        { availableActions }
+      );
 
-          const thinkingTime = this.calculateAIThinkingTime(currentPlayer, decision);
+      const thinkingTime = this.calculateAIThinkingTime(currentPlayer, decision);
 
-          this.broadcastToRoom(gameState.roomId, 'aiThinking', {
-            playerId: currentPlayer.id,
-            playerName: currentPlayer.name,
-            thinkingTime,
-          });
+      this.broadcastToRoom(gameState.roomId, 'aiThinking', {
+        playerId: currentPlayer.id,
+        playerName: currentPlayer.name,
+        thinkingTime,
+      });
 
-          await new Promise<void>((resolve) => setTimeout(resolve, thinkingTime));
+      await new Promise<void>((resolve) => setTimeout(resolve, thinkingTime));
 
-          const result = this.gameEngine.processCardReveal(
-            gameState.gameId,
-            currentPlayer.id,
-            decision.action
-          );
+      const result = this.gameEngine.processCardReveal(
+        gameState.gameId,
+        currentPlayer.id,
+        decision.action
+      );
 
-          if (result.success && result.newGameState) {
-            this.broadcastToRoom(gameState.roomId, 'aiAction', {
-              playerId: currentPlayer.id,
-              playerName: currentPlayer.name,
-              action: decision.action,
-              confidence: decision.confidence,
-              reasoning: decision.reasoning,
-            });
+      if (result.success && result.newGameState) {
+        this.broadcastToRoom(gameState.roomId, 'aiAction', decision.action, result);
+        this.broadcastToRoom(gameState.roomId, 'gameStateUpdated', result.newGameState);
 
-            this.broadcastToRoom(gameState.roomId, 'gameStateUpdated', result.newGameState);
-
-            if (result.revealedCard) {
-              this.broadcastToRoom(gameState.roomId, 'cardRevealed', result.revealedCard, currentPlayer.id);
-            }
-            if (result.trioFormed) {
-              this.broadcastToRoom(gameState.roomId, 'trioFormed', result.trioFormed, currentPlayer.id);
-            }
-            if (result.newGameState.currentPlayerId !== currentPlayer.id && !result.trioFormed) {
-              this.broadcastToRoom(gameState.roomId, 'trioFailed', currentPlayer.id);
-            }
-
-            if (result.victoryResult?.hasWon) {
-              this.broadcastToRoom(gameState.roomId, 'gameEnded', result.victoryResult);
-            } else {
-              if (result.newGameState.currentPlayerId !== currentPlayer.id) {
-                this.broadcastToRoom(gameState.roomId, 'turnChanged', result.newGameState.currentPlayerId);
-              }
-              await this.processAITurnIfNeeded(result.newGameState);
-            }
-          } else {
-            console.error(`Échec de l'action IA: ${result.message}`);
-          }
+        if (result.revealedCard) {
+          this.broadcastToRoom(gameState.roomId, 'cardRevealed', result.revealedCard, currentPlayer.id);
         }
-      } catch (error) {
-        console.error('Erreur lors du traitement du tour IA:', error);
+        if (result.trioFormed) {
+          this.broadcastToRoom(gameState.roomId, 'trioFormed', result.trioFormed, currentPlayer.id);
+        }
+        if (result.newGameState.currentPlayerId !== currentPlayer.id && !result.trioFormed) {
+          this.broadcastToRoom(gameState.roomId, 'trioFailed', currentPlayer.id);
+        }
+
+        if (result.victoryResult?.hasWon) {
+          this.broadcastToRoom(gameState.roomId, 'gameEnded', result.victoryResult);
+        } else {
+          if (result.newGameState.currentPlayerId !== currentPlayer.id) {
+            this.broadcastToRoom(gameState.roomId, 'turnChanged', result.newGameState.currentPlayerId);
+          }
+          await this.processAITurnIfNeeded(result.newGameState);
+        }
       }
+    } catch (error) {
+      console.error('Erreur tour IA:', error);
     }
   }
 
@@ -571,21 +477,14 @@ export class WebSocketGateway {
       HARD: { min: 1500, max: 4000 },
     };
 
-    const difficulty = aiPlayer.aiDifficulty ?? 'MEDIUM';
-    const timeRange = baseTimes[difficulty] ?? baseTimes['MEDIUM'];
-    let thinkingTime = timeRange.min + Math.random() * (timeRange.max - timeRange.min);
-
-    if (decision.confidence < 0.5) thinkingTime *= 1.5;
-    else if (decision.confidence > 0.8) thinkingTime *= 0.7;
-
-    return Math.round(thinkingTime);
+    const timeRange = baseTimes[aiPlayer.aiDifficulty ?? 'MEDIUM'] ?? baseTimes['MEDIUM'];
+    let t = timeRange.min + Math.random() * (timeRange.max - timeRange.min);
+    if (decision.confidence < 0.5) t *= 1.5;
+    else if (decision.confidence > 0.8) t *= 0.7;
+    return Math.round(t);
   }
 
-  public getConnectionStats(): {
-    totalConnections: number;
-    authenticatedPlayers: number;
-    roomsWithPlayers: number;
-  } {
+  public getConnectionStats() {
     return {
       totalConnections: this.io.sockets.sockets.size,
       authenticatedPlayers: this.connectedPlayers.size,
@@ -600,7 +499,6 @@ export class WebSocketGateway {
   public cleanup(): void {
     const now = Date.now();
     const maxAge = 60 * 60 * 1000;
-
     for (const [playerId, socket] of this.connectedPlayers.entries()) {
       if (socket.data.connectionTime && now - socket.data.connectionTime > maxAge) {
         socket.disconnect(true);

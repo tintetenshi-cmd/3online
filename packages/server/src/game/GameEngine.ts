@@ -39,6 +39,16 @@ import {
 
 import { validateGameAction, validateGameState } from '@3online/shared';
 
+import {
+  Player, UUID, GameState, Card, Trio, GameAction, ActionResult,
+  TurnResult, VictoryResult, GameStatus, CardLocation, ActionType,
+  createFullDeck, shuffleArray, getCardsPerPlayer, sortHand,
+  generateUUID, checkVictoryConditions, getSmallestCard, getLargestCard,
+  extractNumbers, allSameNumber, hasTwoConsecutiveDifferentNumbers,
+  hasTwoDifferentNumbers, createTrio, getNextPlayer, createInitialGameState,
+  validateGameAction, validateGameState,
+} from '@3online/shared';
+
 export class GameEngine {
   private gameStates: Map<UUID, GameState> = new Map();
 

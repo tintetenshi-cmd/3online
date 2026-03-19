@@ -1,4 +1,6 @@
-// Core types
+// packages/shared/src/index.ts
+
+// Tout depuis core (types + enums + interfaces)
 export * from './types/core.js';
 
 // Utils
@@ -7,7 +9,7 @@ export * from './utils/helpers.js';
 export * from './utils/cardColors.js';
 export * from './utils/constants.js';
 
-// VALUES (enums & objets runtime)
+// Re-export explicite des enums comme valeurs runtime
 export {
   AI_DIFFICULTY_CONFIGS,
   AvatarType,
@@ -20,19 +22,7 @@ export {
   ActionType,
   CardLocation,
   TurnPhase,
+  VictoryCondition,
 } from './types/core.js';
 
-// TYPES (interfaces/type aliases) — à compléter avec ce qui est dans core.ts
-export type {
-  UUID,
-  Player,
-  ChatMessage,
-  GameAction,
-  ActionResult,
-  AIStrategy,
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
-  // + tous les autres types utilisés dans server/client
-} from './types/core.js';
+// PAS de bloc export type {} vide — le export * au-dessus suffit

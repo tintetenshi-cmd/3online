@@ -29,6 +29,14 @@ import {
 
 import { validateRoomSettings, validateRoomInfo } from '@3online/shared';
 
+import {
+  Player, UUID, RoomInfo, RoomState, RoomSettings,
+  JoinResult, LeaveResult, StartResult, ChatMessage,
+  ConnectionStatus, AIDifficulty, RoomStatus, GameStatus,
+  generateUUID, generateRoomCode, createPlayer,
+  validateRoomSettings, validateRoomInfo,
+} from '@3online/shared';
+
 export class RoomManager {
   private rooms: Map<UUID, RoomState> = new Map();
   private roomCodes: Map<string, UUID> = new Map();

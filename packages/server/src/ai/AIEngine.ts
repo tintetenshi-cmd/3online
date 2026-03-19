@@ -33,6 +33,7 @@ import {
   checkVictoryConditions,
 } from '@3online/shared';
 
+
 export class AIEngine {
   private aiMemories: Map<UUID, AIMemory> = new Map();
 
