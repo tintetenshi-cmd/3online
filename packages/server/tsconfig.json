@@ -1,22 +1,26 @@
 {
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "Node16",
-    "moduleResolution": "node16",
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "strict": false,
-    "noImplicitAny": false,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "declaration": true
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"],
-  "references": [
-    { "path": "../shared" }
-  ]
-}
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+      "target": "ES2022",
+      "lib": ["ES2022"],
+      "module": "Node16",
+      "moduleResolution": "node16",
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "composite": true,
+      "declaration": true,
+      "declarationMap": true,
+      "sourceMap": true,
+      "strict": false,
+      "noImplicitAny": false,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true
+    },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist", "**/*.test.ts"],
+    "references": [
+      { "path": "../shared" }
+    ]
+  }
+  

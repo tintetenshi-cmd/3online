@@ -14,20 +14,20 @@ RUN npm ci
 
 # Copier le code source
 COPY . .
-# 1. Build shared → génère dist/
-RUN cd packages/shared && npm ci && npm run build
+# Build shared
+RUN cd packages/shared && npm run build
 
-# 2. Install server deps (va installer @3online/shared en version vide/obsolète)
-RUN cd packages/server && npm ci
-
-# 3. Écraser le shared installé par npm ci avec notre version buildée
+# Copier shared dans node_modules server
 RUN rm -rf /app/packages/server/node_modules/@3online/shared && \
     mkdir -p /app/packages/server/node_modules/@3online/shared && \
     cp -r /app/packages/shared/dist /app/packages/server/node_modules/@3online/shared/ && \
     cp /app/packages/shared/package.json /app/packages/server/node_modules/@3online/shared/
 
-# 4. Build server
+# Build server
 RUN cd packages/server && npm run build
+
+# Build client  ← manquant dans ton Dockerfile actuel ?
+RUN cd packages/client && npm run build
 
 
 
