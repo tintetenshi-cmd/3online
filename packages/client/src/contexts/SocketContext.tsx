@@ -1,11 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
-import {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
-} from '@3online/shared';
+import { ClientToServerEvents, ServerToClientEvents } from '@3online/shared';
 
 type SocketType = Socket<ServerToClientEvents, ClientToServerEvents>;
 
@@ -23,9 +18,7 @@ const SocketContext = createContext<SocketContextType>({
 
 export const useSocket = () => {
   const context = useContext(SocketContext);
-  if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider');
-  }
+  if (!context) throw new Error('useSocket must be used within a SocketProvider');
   return context;
 };
 
@@ -39,21 +32,21 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
   const [connectionError, setConnectionError] = useState<string | null>(null);
 
   useEffect(() => {
-    // URL du serveur (configurable via variable d'environnement)
     const serverUrl =
       import.meta.env.VITE_SERVER_URL ||
       (import.meta.env.PROD ? window.location.origin : 'http://localhost:3001');
-    
+
     console.log('Connexion au serveur:', serverUrl);
 
-    // Créer la connexion Socket.IO
     const newSocket: SocketType = io(serverUrl, {
-      transports: ['websocket', 'polling'],
-      timeout: 5000,
-      retries: 3,
+      transports: ['polling', 'websocket'], // polling en premier — plus fiable sur Render
+      timeout: 20000,                       // 20s pour le cold start Render
+      reconnectionAttempts: 3,              // max 3 tentatives
+      reconnectionDelay: 3000,              // 3s entre chaque tentative
+      reconnectionDelayMax: 15000,
+      // 'retries' n'existe pas dans socket.io-client — supprimé
     });
 
-    // Gestionnaires d'événements de connexion
     newSocket.on('connect', () => {
       console.log('Connecté au serveur:', newSocket.id);
       setIsConnected(true);
@@ -63,15 +56,11 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     newSocket.on('disconnect', (reason) => {
       console.log('Déconnecté du serveur:', reason);
       setIsConnected(false);
-      
-      if (reason === 'io server disconnect') {
-        // Le serveur a fermé la connexion, reconnecter manuellement
-        newSocket.connect();
-      }
+      // Ne pas reconnecter manuellement si le serveur a fermé — laisser socket.io gérer
     });
 
     newSocket.on('connect_error', (error) => {
-      console.error('Erreur de connexion:', error);
+      console.error('Erreur de connexion:', error.message);
       setConnectionError(error.message);
       setIsConnected(false);
     });
@@ -83,43 +72,32 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     });
 
     newSocket.on('reconnect_error', (error) => {
-      console.error('Erreur de reconnexion:', error);
+      console.error('Erreur de reconnexion:', error.message);
       setConnectionError('Impossible de se reconnecter au serveur');
     });
 
     newSocket.on('reconnect_failed', () => {
       console.error('Échec de la reconnexion');
-      setConnectionError('Connexion au serveur impossible');
+      setConnectionError('Serveur inaccessible. Rechargez la page pour réessayer.');
+      newSocket.disconnect(); // stopper toute tentative supplémentaire
     });
 
-    // Gestionnaires d'événements du jeu
-    newSocket.on('error', (message, code) => {
-      console.error('Erreur du serveur:', message, code);
-      // Les erreurs spécifiques au jeu seront gérées par les composants
+    newSocket.on('error', (message) => {
+      // signature ServerToClientEvents : error(message: string)
+      console.error('Erreur du serveur:', message);
     });
 
-    newSocket.on('notification', (message, type) => {
-      console.log(`Notification ${type}:`, message);
-      // Les notifications seront gérées par les composants
-    });
+    // 'notification' n'existe pas dans ServerToClientEvents — supprimé
 
     setSocket(newSocket);
 
-    // Nettoyage lors du démontage
     return () => {
-      console.log('Fermeture de la connexion Socket.IO');
-      newSocket.close();
+      newSocket.disconnect(); // disconnect() plutôt que close()
     };
   }, []);
 
-  const value: SocketContextType = {
-    socket,
-    isConnected,
-    connectionError,
-  };
-
   return (
-    <SocketContext.Provider value={value}>
+    <SocketContext.Provider value={{ socket, isConnected, connectionError }}>
       {children}
     </SocketContext.Provider>
   );

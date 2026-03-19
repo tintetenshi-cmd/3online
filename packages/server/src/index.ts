@@ -192,15 +192,16 @@ class Server {
   }
 
   public start(): void {
-    this.httpServer.listen(PORT, () => {
+    this.httpServer.listen(PORT, '0.0.0.0', () => {
       console.log(`🚀 Serveur 3online démarré sur le port ${PORT}`);
       console.log(`🌐 CLIENT_URL: ${CLIENT_URL}`);
       console.log(`📊 Health: http://localhost:${PORT}/health`);
     });
-
+  
     process.on('SIGTERM', () => this.shutdown('SIGTERM'));
     process.on('SIGINT', () => this.shutdown('SIGINT'));
   }
+  
 
   private shutdown(signal: string): void {
     console.log(`\n🛑 Arrêt (${signal})`);
