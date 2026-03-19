@@ -10,11 +10,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "bundler",
+    "moduleResolution": "node16",  // ← CHANGÉ : de "bundler" → "node16"
     "allowImportingTsExtensions": false,
     "noEmit": false,
     "declaration": true,
-    "composite": true
+    "composite": true,
+    "declarationMap": true        // ← AJOUTÉ : aide IDE
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules"]
