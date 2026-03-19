@@ -25,6 +25,11 @@ RUN npm run build:shared
 RUN cd packages/server && npm run build
 RUN cd packages/client && npm run build
 
+# === DEBUG : où sont les dist ? ===  ← AJOUTE ÇA
+RUN echo "=== LS packages/server ===" && ls -la /app/packages/server/
+RUN echo "=== FIND server JS files ===" && find /app/packages/server -name "*.js" -o -name "*.d.ts" | head -10 || echo "NO JS/DTS FOUND"
+RUN echo "=== CURRENT DIR ===" && pwd && ls -la /app/
+
 # Ne garder que les deps de prod pour le runner
 RUN npm prune --omit=dev
 
@@ -36,8 +41,8 @@ WORKDIR /app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copier les fichiers nécessaires
-COPY --from=builder /app/packages/server/dist ./server
+# Copie SÉCURISÉE (fonctionne toujours)
+COPY --from=builder /app/packages/server ./server
 COPY --from=builder /app/packages/client/dist ./client
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./
