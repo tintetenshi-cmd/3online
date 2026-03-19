@@ -37,9 +37,22 @@ interface GameState {
 }
 
 // Interface locale pour AIPlayer (étend Player avec les champs IA)
-interface AIPlayer extends Player {
+// Fallback si Player pose toujours problème à l'import
+type AIPlayer = {
+  id: UUID;
+  name: string;
+  avatar: string;
+  avatarSeed: string;
+  nameColor: string;
+  hand: unknown[];
+  trios: unknown[];
+  isAI: boolean;
+  connectionStatus: ConnectionStatus;
+  score: { trios: number; victories: number };
   aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
-}
+};
+
+
 
 // Interface locale pour la décision IA
 interface AIDecision {

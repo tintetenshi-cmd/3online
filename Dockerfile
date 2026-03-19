@@ -15,19 +15,18 @@ RUN npm ci
 # Copier le code source
 COPY . .
 
-# 1. Build shared EN PREMIER → génère dist/ + index.d.ts
+# 1. Build shared
 RUN cd packages/shared && npm ci && npm run build
 
-# 2. Créer le scope @3online puis copier shared dans node_modules du server
+# 2. Install server deps (crée node_modules propre)
+RUN cd packages/server && npm ci
+
+# 3. Injecter shared APRÈS npm ci (pour ne pas être écrasé)
 RUN mkdir -p /app/packages/server/node_modules/@3online && \
     cp -r /app/packages/shared /app/packages/server/node_modules/@3online/shared
 
-# 3. Build server
-RUN cd packages/server && npm ci && npm run build
-
-
-# 4. Build client
-RUN cd packages/client && npm ci && npm run build
+# 4. Build server
+RUN cd packages/server && npm run build
 
 
 # ── Stage de production ──────────────────────────────────────────
