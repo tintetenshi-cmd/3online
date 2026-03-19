@@ -1,16 +1,26 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "./src",
+    "target": "ES2022",
+    "lib": ["ES2022"],
     "module": "Node16",
     "moduleResolution": "node16",
-    "baseUrl": ".",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "baseUrl": "../../",
     "paths": {
-      "@3online/shared": ["../../packages/shared/dist/index"],  // ← CRITIQUE
-      "@3online/shared/*": ["../../packages/shared/dist/*"]
+      "@3online/shared": ["packages/shared/dist/index"],
+      "@3online/shared/*": ["packages/shared/dist/*"]
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "node_modules", "**/*.test.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts"],
+  "references": [
+    { "path": "../shared" }
+  ]
 }
