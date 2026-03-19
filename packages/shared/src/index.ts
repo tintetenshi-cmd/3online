@@ -1,28 +1,50 @@
-// packages/shared/src/index.ts
-
-// Tout depuis core (types + enums + interfaces)
+// Types + enums depuis core
 export * from './types/core.js';
 
-// Utils
-export * from './utils/validation.js';
-export * from './utils/helpers.js';
+// Utils helpers
+export {
+  generateUUID,
+  generateRoomCode,
+  shuffleArray,
+  createFullDeck,
+  sortHand,
+  getCardsPerPlayer,
+  isValidTrio,
+  createTrio,
+  checkVictoryConditions,
+  getSmallestCard,
+  getLargestCard,
+  hasTwoDifferentNumbers,
+  hasTwoConsecutiveDifferentNumbers,
+  extractNumbers,
+  allSameNumber,
+  getNextPlayer,
+  createPlayer,
+  calculateAIDelay,
+  isPlayerConnected,
+  getConnectedPlayers,
+  formatTime,
+  calculatePlayerScore,
+  canRevealCard,
+  getRevealableCenterCards,
+  createInitialGameState,
+} from './utils/helpers.js';
+
+// Utils validation
+export {
+  isValidUUID,
+  validateCard,
+  validateTrio,
+  validatePlayer,
+  validateGameAction,
+  validateGameState,
+  validateRoomSettings,
+  validateRoomInfo,
+  validateCardIntegrity,
+} from './utils/validation.js';
+
+export type { ValidationResult } from './utils/validation.js';
+
+// Utils extras
 export * from './utils/cardColors.js';
 export * from './utils/constants.js';
-
-// Re-export explicite des enums comme valeurs runtime
-export {
-  AI_DIFFICULTY_CONFIGS,
-  AvatarType,
-  AIDifficulty,
-  ConnectionStatus,
-  GameStatus,
-  RoomStatus,
-  TurnResultType,
-  GameMode,
-  ActionType,
-  CardLocation,
-  TurnPhase,
-  VictoryCondition,
-} from './types/core.js';
-
-// PAS de bloc export type {} vide — le export * au-dessus suffit

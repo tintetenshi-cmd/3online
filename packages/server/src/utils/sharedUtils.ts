@@ -1,3 +1,4 @@
+// packages/server/src/utils/sharedUtils.ts
 export {
   generateUUID,
   generateRoomCode,
@@ -18,7 +19,7 @@ export {
   getNextPlayer,
   createInitialGameState,
   calculateAIDelay,
-} from '../../../shared/src/utils/helpers.js';
+} from '@3online/shared';
 
 export {
   validateCard,
@@ -30,4 +31,4 @@ export {
   validateRoomInfo,
   validateCardIntegrity,
   isValidUUID,
-} from '../../../shared/src/utils/validation.js';
+} from '@3online/shared';
