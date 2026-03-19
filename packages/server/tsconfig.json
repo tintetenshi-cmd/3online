@@ -11,12 +11,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "declaration": true,
-    "baseUrl": "../../",
-    "paths": {
-      "@3online/shared": ["packages/shared/dist/index"],
-      "@3online/shared/*": ["packages/shared/dist/*"]
-    }
+    "declaration": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"],
