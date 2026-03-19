@@ -14,17 +14,17 @@ RUN npm ci
 
 # Copier le code source
 COPY . .
-
 # 1. Build shared → génère dist/
 RUN cd packages/shared && npm ci && npm run build
 
-# 2. Install server deps
+# 2. Install server deps (va installer @3online/shared en version vide/obsolète)
 RUN cd packages/server && npm ci
 
-# 3. Injecter dist de shared APRÈS npm ci
-RUN mkdir -p /app/packages/server/node_modules/@3online/shared && \
-    cp -r /app/packages/shared/dist /app/packages/server/node_modules/@3online/shared/dist && \
-    cp /app/packages/shared/package.json /app/packages/server/node_modules/@3online/shared/package.json
+# 3. Écraser le shared installé par npm ci avec notre version buildée
+RUN rm -rf /app/packages/server/node_modules/@3online/shared && \
+    mkdir -p /app/packages/server/node_modules/@3online/shared && \
+    cp -r /app/packages/shared/dist /app/packages/server/node_modules/@3online/shared/ && \
+    cp /app/packages/shared/package.json /app/packages/server/node_modules/@3online/shared/
 
 # 4. Build server
 RUN cd packages/server && npm run build
