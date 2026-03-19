@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useGame } from '../contexts/SimpleGame'
 import { GameMode, AIDifficulty } from '@3online/shared'
@@ -11,16 +11,16 @@ import './GameLobby.css'
 const GameLobby: React.FC = () => {
   const navigate = useNavigate()
   const { roomCode: urlRoomCode } = useParams()
-  const { 
-    state, 
-    connectSocket, 
-    createRoom, 
-    joinRoom, 
-    leaveRoom, 
+  const {
+    state,
+    connectSocket,
+    createRoom,
+    joinRoom,
+    leaveRoom,
     startGame,
     sendChatMessage,
     addAIPlayer,
-    removeAIPlayer
+    removeAIPlayer,
   } = useGame()
 
   const [mode, setMode] = useState<'create' | 'join' | 'ai' | 'lobby'>('create')
@@ -31,53 +31,52 @@ const GameLobby: React.FC = () => {
   const [showPlayerSetup, setShowPlayerSetup] = useState(false)
   const [showAIMenu, setShowAIMenu] = useState(false)
 
-  // Vérifier si le joueur est configuré
+  // ← Empêche connectSocket d'être rappelé en boucle
+  const hasConnected = useRef(false)
+
   useEffect(() => {
     if (!state.playerInfo) {
       setShowPlayerSetup(true)
     }
   }, [state.playerInfo])
 
-  // Se connecter automatiquement
+  // ← Une seule tentative de connexion, jamais retriggée par isConnected
   useEffect(() => {
-    if (state.playerInfo && !state.isConnected) {
+    if (state.playerInfo && !hasConnected.current) {
+      hasConnected.current = true
       connectSocket()
     }
-  }, [state.playerInfo, state.isConnected, connectSocket])
+  }, [state.playerInfo]) // ← connectSocket RETIRÉ des dépendances
 
   // Rejoindre automatiquement si code dans l'URL
   useEffect(() => {
     if (urlRoomCode && state.isConnected && state.playerInfo && !state.roomState) {
       handleJoinRoom(urlRoomCode)
     }
-  }, [urlRoomCode, state.isConnected, state.playerInfo, state.roomState])
+  }, [urlRoomCode, state.isConnected]) // ← dépendances minimales
 
   // Rediriger vers le jeu si la partie commence
   useEffect(() => {
     if (state.gameState && state.roomState) {
       navigate(`/game/${state.roomState.info.id}`)
     }
-  }, [state.gameState, state.roomState, navigate])
+  }, [state.gameState])
 
-  const handlePlayerSetupComplete = (name: string, avatar: string, avatarSeed: string, nameColor: string) => {
-    // Stocké dans le contexte via PlayerSetup/MainMenu (ou directement ici si besoin)
-    // On ferme simplement la modale: les infos sont déjà sauvegardées côté contexte.
+  const handlePlayerSetupComplete = () => {
     setShowPlayerSetup(false)
   }
 
   const handleCreateRoom = async () => {
     try {
-      const settings = {
+      await createRoom({
         maxPlayers,
         gameMode: GameMode.SIMPLE,
         allowAI,
         isPrivate: false,
-      }
-
-      await createRoom(settings)
+      })
       setMode('lobby')
     } catch (error) {
-      console.error('Erreur lors de la création de la salle:', error)
+      console.error('Erreur création salle:', error)
     }
   }
 
@@ -85,11 +84,10 @@ const GameLobby: React.FC = () => {
     try {
       const codeToJoin = code || roomCode
       if (!codeToJoin) return
-
       await joinRoom(codeToJoin)
       setMode('lobby')
     } catch (error) {
-      console.error('Erreur lors de la jointure:', error)
+      console.error('Erreur jointure:', error)
     }
   }
 
@@ -99,7 +97,7 @@ const GameLobby: React.FC = () => {
       setMode('create')
       navigate('/lobby')
     } catch (error) {
-      console.error('Erreur lors de la sortie:', error)
+      console.error('Erreur sortie:', error)
     }
   }
 
@@ -107,19 +105,18 @@ const GameLobby: React.FC = () => {
     try {
       await startGame()
     } catch (error) {
-      console.error('Erreur lors du démarrage:', error)
+      console.error('Erreur démarrage:', error)
     }
   }
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!chatMessage.trim()) return
-
     try {
       await sendChatMessage(chatMessage.trim())
       setChatMessage('')
     } catch (error) {
-      console.error('Erreur lors de l\'envoi du message:', error)
+      console.error('Erreur envoi message:', error)
     }
   }
 
@@ -128,7 +125,7 @@ const GameLobby: React.FC = () => {
       await addAIPlayer(difficulty)
       setShowAIMenu(false)
     } catch (error) {
-      console.error('Erreur lors de l\'ajout de l\'IA:', error)
+      console.error('Erreur ajout IA:', error)
     }
   }
 
@@ -136,7 +133,7 @@ const GameLobby: React.FC = () => {
     try {
       await removeAIPlayer(playerId)
     } catch (error) {
-      console.error('Erreur lors de la suppression de l\'IA:', error)
+      console.error('Erreur suppression IA:', error)
     }
   }
 
@@ -162,6 +159,7 @@ const GameLobby: React.FC = () => {
         <div className="loading-spinner">
           <div className="spinner"></div>
           <p>Connexion au serveur...</p>
+          {state.error && <p className="error-message">{state.error}</p>}
         </div>
       </div>
     )
@@ -171,22 +169,15 @@ const GameLobby: React.FC = () => {
     return (
       <div className="lobby">
         <div className="lobby__container">
-          {/* Header de la salle */}
           <header className="lobby__header">
             <div className="room-info">
               <h1>Salle {state.roomState.info.code}</h1>
               <p>{state.roomState.players.length}/{state.roomState.info.settings.maxPlayers} joueurs</p>
             </div>
-            <Button
-              variant="ghost"
-              onClick={handleLeaveRoom}
-            >
-              Quitter
-            </Button>
+            <Button variant="ghost" onClick={handleLeaveRoom}>Quitter</Button>
           </header>
 
           <div className="lobby__content">
-            {/* Liste des joueurs */}
             <div className="lobby__players">
               <h2>Joueurs</h2>
               <div className="players-list">
@@ -206,20 +197,13 @@ const GameLobby: React.FC = () => {
                       })()}
                       {player.isHost && <span className="host-badge">Hôte</span>}
                       {player.isAI && (
-                        <span className="ai-badge">
-                          IA {player.aiDifficulty || 'MEDIUM'}
-                        </span>
+                        <span className="ai-badge">IA {player.aiDifficulty || 'MEDIUM'}</span>
                       )}
                     </div>
                     <div className="player-status">
                       <span className={`status-dot status-dot--${player.connectionStatus}`} />
                       {isHost && player.isAI && (
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          onClick={() => handleRemoveAI(player.id)}
-                          className="remove-ai-btn"
-                        >
+                        <Button variant="ghost" size="small" onClick={() => handleRemoveAI(player.id)} className="remove-ai-btn">
                           ✕
                         </Button>
                       )}
@@ -228,7 +212,6 @@ const GameLobby: React.FC = () => {
                 ))}
               </div>
 
-              {/* Actions de l'hôte */}
               {isHost && (
                 <div className="host-actions">
                   {!showAIMenu ? (
@@ -244,34 +227,10 @@ const GameLobby: React.FC = () => {
                     <div className="ai-difficulty-menu">
                       <p>Choisir la difficulté :</p>
                       <div className="ai-buttons">
-                        <Button
-                          variant="secondary"
-                          size="small"
-                          onClick={() => handleAddAI(AIDifficulty.EASY)}
-                        >
-                          Facile
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="small"
-                          onClick={() => handleAddAI(AIDifficulty.MEDIUM)}
-                        >
-                          Moyen
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="small"
-                          onClick={() => handleAddAI(AIDifficulty.HARD)}
-                        >
-                          Difficile
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="small"
-                          onClick={() => setShowAIMenu(false)}
-                        >
-                          Annuler
-                        </Button>
+                        <Button variant="secondary" size="small" onClick={() => handleAddAI(AIDifficulty.EASY)}>Facile</Button>
+                        <Button variant="secondary" size="small" onClick={() => handleAddAI(AIDifficulty.MEDIUM)}>Moyen</Button>
+                        <Button variant="secondary" size="small" onClick={() => handleAddAI(AIDifficulty.HARD)}>Difficile</Button>
+                        <Button variant="ghost" size="small" onClick={() => setShowAIMenu(false)}>Annuler</Button>
                       </div>
                     </div>
                   )}
@@ -279,24 +238,17 @@ const GameLobby: React.FC = () => {
               )}
             </div>
 
-            {/* Chat */}
             <div className="lobby__chat">
               <h2>Chat</h2>
               <div className="chat-messages">
                 {state.chatMessages.map((message) => {
                   const author = state.roomState.players.find((p: any) => p.id === message.playerId)
                   const t = pseudoTextStyle(author?.nameColor)
-
                   return (
                     <div key={message.id} className={`chat-message ${message.isSystemMessage ? 'system' : ''}`}>
                       {!message.isSystemMessage && (
                         <span className="message-author">
-                          <AvatarBadge
-                            avatar={author?.avatar}
-                            seed={author?.avatarSeed || author?.id || message.playerName}
-                            size={22}
-                            className="message-avatar"
-                          />
+                          <AvatarBadge avatar={author?.avatar} seed={author?.avatarSeed || author?.id || message.playerName} size={22} className="message-avatar" />
                           <span className={`message-author-name pseudo-text ${t.extraClass}`} style={t.style}>
                             {message.playerName}:
                           </span>
@@ -315,38 +267,21 @@ const GameLobby: React.FC = () => {
                   placeholder="Tapez votre message..."
                   maxLength={200}
                 />
-                <Button type="submit" variant="primary" size="small">
-                  Envoyer
-                </Button>
+                <Button type="submit" variant="primary" size="small">Envoyer</Button>
               </form>
             </div>
           </div>
 
-          {/* Actions */}
           <div className="lobby__actions">
             {isHost && (
-              <Button
-                variant="primary"
-                size="large"
-                onClick={handleStartGame}
-                disabled={!canStart || state.isLoading}
-                loading={state.isLoading}
-              >
+              <Button variant="primary" size="large" onClick={handleStartGame} disabled={!canStart || state.isLoading} loading={state.isLoading}>
                 Démarrer la partie
               </Button>
             )}
-            {!isHost && (
-              <p className="waiting-message">
-                En attente que l'hôte démarre la partie...
-              </p>
-            )}
+            {!isHost && <p className="waiting-message">En attente que l'hôte démarre la partie...</p>}
           </div>
 
-          {state.error && (
-            <div className="error-message">
-              {state.error}
-            </div>
-          )}
+          {state.error && <div className="error-message">{state.error}</div>}
         </div>
       </div>
     )
@@ -356,12 +291,7 @@ const GameLobby: React.FC = () => {
     <div className="lobby">
       <div className="lobby__container">
         <header className="lobby__header">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/')}
-          >
-            ← Retour
-          </Button>
+          <Button variant="ghost" onClick={() => navigate('/')}>← Retour</Button>
           <h1>Rejoindre une partie</h1>
         </header>
 
@@ -369,14 +299,10 @@ const GameLobby: React.FC = () => {
           <div className="mode-card">
             <h2>Héberger une partie</h2>
             <p>Créez une nouvelle salle et invitez vos amis</p>
-            
             <div className="settings">
               <div className="setting">
                 <label>Nombre de joueurs max</label>
-                <select 
-                  value={maxPlayers} 
-                  onChange={(e) => setMaxPlayers(Number(e.target.value))}
-                >
+                <select value={maxPlayers} onChange={(e) => setMaxPlayers(Number(e.target.value))}>
                   <option value={2}>2 joueurs</option>
                   <option value={3}>3 joueurs</option>
                   <option value={4}>4 joueurs</option>
@@ -384,25 +310,14 @@ const GameLobby: React.FC = () => {
                   <option value={6}>6 joueurs</option>
                 </select>
               </div>
-              
               <div className="setting">
                 <label>
-                  <input
-                    type="checkbox"
-                    checked={allowAI}
-                    onChange={(e) => setAllowAI(e.target.checked)}
-                  />
+                  <input type="checkbox" checked={allowAI} onChange={(e) => setAllowAI(e.target.checked)} />
                   Autoriser les IA
                 </label>
               </div>
             </div>
-
-            <Button
-              variant="primary"
-              onClick={handleCreateRoom}
-              disabled={state.isLoading}
-              loading={state.isLoading}
-            >
+            <Button variant="primary" onClick={handleCreateRoom} disabled={state.isLoading} loading={state.isLoading}>
               Créer la salle
             </Button>
           </div>
@@ -410,7 +325,6 @@ const GameLobby: React.FC = () => {
           <div className="mode-card">
             <h2>Rejoindre une salle</h2>
             <p>Entrez le code d'une salle existante</p>
-            
             <div className="join-form">
               <input
                 type="text"
@@ -419,24 +333,14 @@ const GameLobby: React.FC = () => {
                 placeholder="Code de la salle"
                 maxLength={6}
               />
-              <Button
-                variant="primary"
-                onClick={() => handleJoinRoom()}
-                disabled={!roomCode || state.isLoading}
-                loading={state.isLoading}
-              >
+              <Button variant="primary" onClick={() => handleJoinRoom()} disabled={!roomCode || state.isLoading} loading={state.isLoading}>
                 Rejoindre
               </Button>
             </div>
           </div>
-
         </div>
 
-        {state.error && (
-          <div className="error-message">
-            {state.error}
-          </div>
-        )}
+        {state.error && <div className="error-message">{state.error}</div>}
       </div>
     </div>
   )
