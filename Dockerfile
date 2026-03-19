@@ -27,6 +27,11 @@ RUN rm -rf /app/packages/server/node_modules/@3online/shared && \
     cp -r /app/packages/shared/dist /app/packages/server/node_modules/@3online/shared/ && \
     cp /app/packages/shared/package.json /app/packages/server/node_modules/@3online/shared/
 
+
+
+ARG CACHE_BUST=1
+RUN echo "Cache bust: $CACHE_BUST"
+
 # ── Build server ──────────────────────────────────────────────────
 RUN cd packages/server && npm run build
 RUN ls -la /app/packages/server/dist/
