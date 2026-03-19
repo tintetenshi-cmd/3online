@@ -1,5 +1,5 @@
 import { ReactNode, useState, createContext, useContext, useEffect, useCallback } from 'react'
-import { socket } from '../socket'
+import { socket } from '../socket.js'
 
 interface PlayerInfo {
   name: string
