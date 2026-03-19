@@ -152,8 +152,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     })
 
     return () => {
-      socket.removeAllListeners()
-      socket.disconnect()
+
     }
   }, []) // ← JAMAIS de dépendances
 
