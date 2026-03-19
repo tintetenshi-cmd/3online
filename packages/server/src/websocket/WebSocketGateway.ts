@@ -1,22 +1,15 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
+// Types uniquement depuis @3online/shared
 import {
-  ClientToServerEvents,
-  ServerToClientEvents,
-  InterServerEvents,
-  SocketData,
-  UUID,
-  Player,
-  GameState,
-  GameStatus,
-  GameAction,
-  ActionResult,
-  ChatMessage,
-  RoomStatus,
-  ConnectionStatus,
-  AvatarType,
-  generateUUID,
+  ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData,
+  UUID, Player, GameState, GameStatus, GameAction, ActionResult,
+  ChatMessage, RoomStatus, ConnectionStatus, AvatarType,
 } from '@3online/shared';
+
+// Utils depuis sharedUtils
+import { generateUUID } from '../utils/sharedUtils.js';
+
 
 import { RoomManager } from '../room/RoomManager.js';
 import { GameEngine } from '../game/GameEngine.js';

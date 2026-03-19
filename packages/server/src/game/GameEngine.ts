@@ -4,50 +4,18 @@
  */
 
 import {
-  GameState,
-  Player,
-  Card,
-  GameAction,
-  ActionResult,
-  TurnResult,
-  TurnResultType,
-  VictoryResult,
-  ActionType,
-  CardLocation,
-  GameStatus,
-  TurnPhase,
-  UUID,
-} from '@3online/shared';
-
-import {
-  createFullDeck,
-  shuffleArray,
-  getCardsPerPlayer,
-  sortHand,
-  generateUUID,
-  checkVictoryConditions,
-  getSmallestCard,
-  getLargestCard,
-  extractNumbers,
-  allSameNumber,
-  hasTwoConsecutiveDifferentNumbers,
-  hasTwoDifferentNumbers,
-  createTrio,
-  getNextPlayer,
-  createInitialGameState,
-} from '@3online/shared';
-
-import { validateGameAction, validateGameState } from '@3online/shared';
-
-import {
   Player, UUID, GameState, Card, Trio, GameAction, ActionResult,
-  TurnResult, VictoryResult, GameStatus, CardLocation, ActionType,
-  createFullDeck, shuffleArray, getCardsPerPlayer, sortHand,
-  generateUUID, checkVictoryConditions, getSmallestCard, getLargestCard,
-  extractNumbers, allSameNumber, hasTwoConsecutiveDifferentNumbers,
-  hasTwoDifferentNumbers, createTrio, getNextPlayer, createInitialGameState,
-  validateGameAction, validateGameState,
+  TurnResult, TurnResultType, VictoryResult, GameStatus, CardLocation,
+  ActionType, TurnPhase, VictoryCondition,
 } from '@3online/shared';
+
+import {
+  generateUUID, createFullDeck, shuffleArray, getCardsPerPlayer, sortHand,
+  getSmallestCard, getLargestCard, extractNumbers, allSameNumber,
+  hasTwoConsecutiveDifferentNumbers, hasTwoDifferentNumbers, createTrio,
+  getNextPlayer, createInitialGameState, checkVictoryConditions,
+  validateGameAction, validateGameState,
+} from '../utils/sharedUtils.js';
 
 export class GameEngine {
   private gameStates: Map<UUID, GameState> = new Map();

@@ -2,29 +2,18 @@
  * Gestionnaire des salles de jeu pour 3online
  */
 
+// Types uniquement depuis @3online/shared
 import {
-  UUID,
-  Player,
-  RoomInfo,
-  RoomState,
-  RoomSettings,
-  RoomStatus,
-  JoinResult,
-  LeaveResult,
-  StartResult,
-  ChatMessage,
-  GameMode,
-  AvatarType,
-  ConnectionStatus,
-  AI_DIFFICULTY_CONFIGS,
-  AIStrategy,
-  AIDifficulty,
-  generateUUID,
-  generateRoomCode,
-  createPlayer,
-  validateRoomSettings,
-  validateRoomInfo,
+  UUID, Player, RoomInfo, RoomState, RoomSettings, RoomStatus,
+  JoinResult, LeaveResult, StartResult, ChatMessage, GameMode,
+  AvatarType, ConnectionStatus, AI_DIFFICULTY_CONFIGS, AIStrategy, AIDifficulty,
 } from '@3online/shared';
+
+// Utils depuis sharedUtils
+import {
+  generateUUID, generateRoomCode, createPlayer,
+  validateRoomSettings, validateRoomInfo,
+} from '../utils/sharedUtils.js';
 
 export class RoomManager {
   private rooms: Map<UUID, RoomState> = new Map();
