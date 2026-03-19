@@ -10,8 +10,6 @@ COPY packages/server/package*.json ./packages/server/
 COPY packages/client/package*.json ./packages/client/
 
 RUN npm ci
-
-# Install explicite dans chaque package
 RUN cd packages/shared && npm install
 RUN cd packages/server && npm install
 RUN cd packages/client && npm install
@@ -21,19 +19,21 @@ COPY . .
 
 # ── Build shared ──────────────────────────────────────────────────
 RUN cd packages/shared && npm run build
+RUN ls -la /app/packages/shared/dist/
 
-# Injecter shared compilé dans node_modules server
+# ── Injecter shared dans server ───────────────────────────────────
 RUN rm -rf /app/packages/server/node_modules/@3online/shared && \
     mkdir -p /app/packages/server/node_modules/@3online/shared && \
     cp -r /app/packages/shared/dist /app/packages/server/node_modules/@3online/shared/ && \
-    cp /app/packages/shared/package.json /app/packages/server/node_modules/@3online/shared/ && \
-    cp -r /app/packages/shared/node_modules /app/packages/server/node_modules/@3online/shared/ 2>/dev/null || true
+    cp /app/packages/shared/package.json /app/packages/server/node_modules/@3online/shared/
 
 # ── Build server ──────────────────────────────────────────────────
 RUN cd packages/server && npm run build
+RUN ls -la /app/packages/server/dist/
 
 # ── Build client ──────────────────────────────────────────────────
 RUN cd packages/client && npm run build
+RUN ls -la /app/packages/client/dist/
 
 
 # ── Stage production ──────────────────────────────────────────────
