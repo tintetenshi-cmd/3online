@@ -1,11 +1,8 @@
+// SimpleGame.tsx — lignes 1-15 à remplacer
 import { ReactNode, useState, createContext, useContext, useEffect, useCallback } from 'react'
-
-// SimpleGame.tsx — LIGNE 1, remplace l'import
 import { io } from 'socket.io-client'
 
-// Juste avant GameProvider, hors du composant
-const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL
-  ?? window.location.origin
+const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? window.location.origin
 
 const socket = io(SERVER_URL, {
   transports: ['websocket'],
@@ -17,6 +14,7 @@ const socket = io(SERVER_URL, {
   reconnectionDelayMax: 30000,
   autoConnect: false,
 })
+
 
 
 interface PlayerInfo {
