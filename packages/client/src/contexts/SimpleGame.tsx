@@ -145,7 +145,31 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     socket.on('aiAction', (d: any) => console.log(`joué:`, d))
     socket.on('gameStateUpdated', onGameStateUpdated)
     socket.on('cardRevealed', (card: any, by: any) => console.log('Carte révélée:', card, 'par', by))
-    socket.on('trioFormed', (trio: any, pid: any) => console.log('Trio formé:', trio, 'par', pid))
+    socket.on('trioFormed', (trio: any, pid: any) => {
+      console.log('Trio formé:', trio, 'par', pid)
+      // Mettre à jour le gameState avec le nouveau trio
+      setGameState((prev: any) => {
+        if (!prev?.gameState) return prev
+        const updatedPlayers = prev.gameState.players.map((player: any) => {
+          if (player.id === pid) {
+            return {
+              ...player,
+              trios: [...player.trios, trio],
+              score: { ...player.score, trios: player.trios.length + 1 }
+            }
+          }
+          return player
+        })
+        return {
+          ...prev,
+          gameState: {
+            ...prev.gameState,
+            players: updatedPlayers,
+            revealedCards: []
+          }
+        }
+      })
+    })
     socket.on('trioFailed', (pid: any) => console.log('Échec trio:', pid))
     socket.on('turnChanged', (pid: any) => console.log('Tour:', pid))
     socket.on('gameEnded', (r: any) => console.log('Partie terminée:', r))

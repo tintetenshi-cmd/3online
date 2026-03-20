@@ -107,6 +107,11 @@ const GameBoard: React.FC = () => {
         })
         setTimeout(() => setGameMessage(null), 3000)
 
+        // Fermer la modale si elle est ouverte
+        setShowPlayerModal(false)
+        setSelectedAction(null)
+        setSelectedPlayer(null)
+
         // Ajouter popup de trio réussi
         const notificationId = generateUUID()
         setTrioNotifications(prev => [...prev, {
@@ -132,6 +137,11 @@ const GameBoard: React.FC = () => {
           type: 'error'
         })
         setTimeout(() => setGameMessage(null), 3000)
+
+        // Fermer la modale si elle est ouverte
+        setShowPlayerModal(false)
+        setSelectedAction(null)
+        setSelectedPlayer(null)
 
         // Ajouter popup d'échec de trio
         const notificationId = generateUUID()
@@ -179,6 +189,11 @@ const GameBoard: React.FC = () => {
       console.log('Game action reçu:', action)
       // Détecter si c'est une action de trio
       if (action.actionType === 'FORM_TRIO' || action.actionType === 'REVEAL_PLAYER_SMALLEST' || action.actionType === 'REVEAL_PLAYER_LARGEST') {
+        // Fermer la modale lors d'une action de trio
+        setShowPlayerModal(false)
+        setSelectedAction(null)
+        setSelectedPlayer(null)
+        
         const player = state.gameState?.players.find(p => p.id === action.playerId)
         if (player) {
           const notificationId = generateUUID()
