@@ -202,7 +202,7 @@
   gap: 12px;
 }
 
-/* Cartes du centre - lignes de minimum 5 */
+/* Cartes du centre - lignes horizontales de 5 */
 .center-cards-section {
   width: 100%;
   display: grid;
@@ -213,11 +213,12 @@
   --center-card-w: 80px;
   --center-card-h: 120px;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--center-card-w), 1fr));
+  grid-template-columns: repeat(5, var(--center-card-w));
   gap: 8px;
-  max-width: 100%;
   justify-items: center;
-  align-content: center;
+  align-content: start;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 .center-card {
