@@ -127,12 +127,36 @@ const GameBoard: React.FC = () => {
       }
     }
 
+    const handleCardRevealed = (card: any, playerId: string) => {
+      const player = state.gameState?.players.find(p => p.id === playerId)
+      if (player && playerId !== state.playerId) {
+        // Notification pour trio réussi/échec basé sur la carte révélée
+        const notificationId = generateUUID()
+        const isSuccess = Math.random() > 0.5 // Simulation de réussite/échec
+        
+        setTrioNotifications(prev => [...prev, {
+          id: notificationId,
+          type: isSuccess ? 'success' : 'failure',
+          message: isSuccess ? `Trio de ${card.number} réussi !` : `Trio de ${card.number} échoué`,
+          player,
+          trioNumber: card.number
+        }])
+
+        // Supprimer la popup après 3 secondes
+        setTimeout(() => {
+          setTrioNotifications(prev => prev.filter(n => n.id !== notificationId))
+        }, 3000)
+      }
+    }
+
     socket.on('trioFormed', handleTrioFormed)
     socket.on('trioFailed', handleTrioFailed)
+    socket.on('cardRevealed', handleCardRevealed)
 
     return () => {
       socket.off('trioFormed', handleTrioFormed)
       socket.off('trioFailed', handleTrioFailed)
+      socket.off('cardRevealed', handleCardRevealed)
     }
   }, [state.gameState])
 
