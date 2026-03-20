@@ -73,11 +73,6 @@ const GameBoard: React.FC = () => {
       linesNeeded = Math.ceil(cardCount / cardsPerRow)
     }
     
-    if (linesNeeded > 2) {
-      cardsPerRow = Math.min(cardCount, Math.floor(containerWidth / (50 + gap)))
-      linesNeeded = Math.ceil(cardCount / cardsPerRow)
-    }
-    
     // Attribuer le nombre de lignes pour le CSS
     container.setAttribute('data-lines', linesNeeded > 5 ? '6+' : linesNeeded.toString())
   }
