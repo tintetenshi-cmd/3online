@@ -25,6 +25,7 @@ const GameBoard: React.FC = () => {
   const [hoveredCardIndex, setHoveredCardIndex] = useState<number | null>(null)
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const [showPlayerModal, setShowPlayerModal] = useState(false)
 
   // Rediriger si pas dans une partie
   useEffect(() => {
@@ -142,9 +143,23 @@ const GameBoard: React.FC = () => {
       await sendGameAction(action)
       setSelectedAction(null)
       setSelectedPlayer(null)
+      setShowPlayerModal(false)
     } catch (error) {
       console.error('Erreur lors de l\'action:', error)
     }
+  }
+
+  const handleActionSelect = (actionType: ActionType) => {
+    setSelectedAction(actionType)
+    if (actionType === ActionType.REVEAL_PLAYER_SMALLEST || actionType === ActionType.REVEAL_PLAYER_LARGEST) {
+      setShowPlayerModal(true)
+    }
+  }
+
+  const closePlayerModal = () => {
+    setShowPlayerModal(false)
+    setSelectedAction(null)
+    setSelectedPlayer(null)
   }
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -338,9 +353,9 @@ const GameBoard: React.FC = () => {
               <Button
                 variant={selectedAction === ActionType.REVEAL_PLAYER_SMALLEST ? 'primary' : 'secondary'}
                 size="medium"
-                onClick={() => setSelectedAction(
+                onClick={() => handleActionSelect(
                   selectedAction === ActionType.REVEAL_PLAYER_SMALLEST
-                    ? null
+                    ? ActionType.REVEAL_CENTER_CARD
                     : ActionType.REVEAL_PLAYER_SMALLEST
                 )}
               >
@@ -349,43 +364,15 @@ const GameBoard: React.FC = () => {
               <Button
                 variant={selectedAction === ActionType.REVEAL_PLAYER_LARGEST ? 'primary' : 'secondary'}
                 size="medium"
-                onClick={() => setSelectedAction(
+                onClick={() => handleActionSelect(
                   selectedAction === ActionType.REVEAL_PLAYER_LARGEST
-                    ? null
+                    ? ActionType.REVEAL_CENTER_CARD
                     : ActionType.REVEAL_PLAYER_LARGEST
                 )}
               >
                 Plus grande
               </Button>
             </div>
-
-            {(selectedAction === ActionType.REVEAL_PLAYER_SMALLEST ||
-              selectedAction === ActionType.REVEAL_PLAYER_LARGEST) && (
-              <div className="player-selection">
-                <p>Choisissez un joueur :</p>
-                <div className="player-buttons">
-                  {state.gameState.players
-                    .filter(p => p.hand.length > 0)
-                    .map((player) => (
-                      <Button
-                        key={player.id}
-                        variant="ghost"
-                        size="small"
-                        onClick={() => handlePlayerCardAction(player.id, selectedAction)}
-                      >
-                        {(() => {
-                          const t = pseudoTextStyle((player as any).nameColor)
-                          return (
-                            <span className={`pseudo-text ${t.extraClass}`} style={t.style}>
-                          {player.name} ({player.hand.length})
-                            </span>
-                          )
-                        })()}
-                      </Button>
-                    ))}
-                </div>
-              </div>
-            )}
           </section>
         )}
       </main>
@@ -489,6 +476,59 @@ const GameBoard: React.FC = () => {
         >
           {isChatOpen ? '✕' : '💬'}
         </button>
+      )}
+
+      {/* Modale de sélection de joueur */}
+      {showPlayerModal && (
+        <div className="player-modal-overlay" onClick={closePlayerModal}>
+          <div className="player-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="player-modal-header">
+              <h3>Choisissez un joueur</h3>
+              <button className="modal-close-btn" onClick={closePlayerModal} aria-label="Fermer">
+                ✕
+              </button>
+            </div>
+            <div className="player-modal-content">
+              <p>
+                {selectedAction === ActionType.REVEAL_PLAYER_SMALLEST 
+                  ? 'Révéler la plus petite carte du joueur :' 
+                  : 'Révéler la plus grande carte du joueur :'
+                }
+              </p>
+              <div className="player-modal-buttons">
+                {state.gameState.players
+                  .filter(p => p.hand.length > 0)
+                  .map((player) => (
+                    <Button
+                      key={player.id}
+                      variant="ghost"
+                      size="medium"
+                      onClick={() => handlePlayerCardAction(player.id, selectedAction!)}
+                      className="player-modal-btn"
+                    >
+                      <div className="player-modal-btn-content">
+                        <AvatarBadge
+                          avatar={(player as any).avatar}
+                          seed={(player as any).avatarSeed || player.id}
+                          size={32}
+                          className="player-modal-avatar"
+                        />
+                        <div className="player-modal-info">
+                          <span 
+                            className={`pseudo-text ${pseudoTextStyle((player as any).nameColor).extraClass}`} 
+                            style={pseudoTextStyle((player as any).nameColor).style}
+                          >
+                            {player.name}
+                          </span>
+                          <span className="player-modal-cards">{player.hand.length} cartes</span>
+                        </div>
+                      </div>
+                    </Button>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       </div>
     </div>
