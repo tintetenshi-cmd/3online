@@ -80,6 +80,7 @@ const GameBoard: React.FC = () => {
       const testPlayer = state.gameState?.players[0]
       if (testPlayer) {
         const notificationId = generateUUID()
+        console.log('Test popup trio - joueur:', testPlayer.name)
         setTrioNotifications(prev => [...prev, {
           id: notificationId,
           type: 'success',
@@ -96,6 +97,15 @@ const GameBoard: React.FC = () => {
 
     // Lancer un test après 2 secondes
     const testTimer = setTimeout(testNotification, 2000)
+
+    // Test manuel avec bouton
+    const manualTest = () => {
+      console.log('Test manuel popup')
+      testNotification()
+    }
+
+    // Ajouter un bouton de test temporaire
+    window.testTrioPopup = manualTest
 
     // Optimisation : mémoriser les handlers pour éviter les recréations
     const handleTrioFormed = (trio: any, playerId: string) => {
@@ -258,31 +268,15 @@ const GameBoard: React.FC = () => {
   }
 
   const handlePlayerCardAction = async (playerId: string, actionType: ActionType) => {
-    if (!isMyTurn) return
-
-    try {
-      const action = {
-        actionId: generateUUID(),
-        playerId: state.playerId!,
-        actionType,
-        targetPlayer: playerId,
-        timestamp: Date.now(),
-      }
-
-      await sendGameAction(action)
-      setSelectedAction(null)
-      setSelectedPlayer(null)
-      setShowPlayerModal(false)
-    } catch (error) {
-      console.error('Erreur lors de l\'action:', error)
+    const action = {
+      actionType,
+      targetPlayerId: playerId,
+      playerId: state.playerId
     }
-  }
-
-  const handleActionSelect = (actionType: ActionType) => {
-    setSelectedAction(actionType)
-    if (actionType === ActionType.REVEAL_PLAYER_SMALLEST || actionType === ActionType.REVEAL_PLAYER_LARGEST) {
-      setShowPlayerModal(true)
-    }
+    await sendGameAction(action)
+    setSelectedAction(null)
+    setSelectedPlayer(null)
+    setShowPlayerModal(false) // Fermer la modale immédiatement après l'action
   }
 
   const closePlayerModal = () => {
