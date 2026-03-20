@@ -274,6 +274,7 @@ const GameBoard: React.FC = () => {
   }, [state.gameState])
 
   if (!state.gameState || !state.roomState) {
+    console.log('Pas de gameState ou roomState, affichage loading')
     return (
       <div className="game-board game-board--loading">
         <div className="loading-spinner">
@@ -283,6 +284,10 @@ const GameBoard: React.FC = () => {
       </div>
     )
   }
+
+  console.log('GameState disponible:', !!state.gameState, 'RoomState disponible:', !!state.roomState)
+  console.log('Nombre de joueurs:', state.gameState?.players.length)
+  console.log('Joueur actuel:', state.gameState?.currentPlayerId)
 
   const currentPlayer = state.gameState.players.find((p: any) => p.id === state.gameState!.currentPlayerId)
   const isMyTurn = state.gameState.currentPlayerId === state.playerId
