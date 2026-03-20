@@ -35,11 +35,12 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Layout global (Grid) */
+/* Layout global (Grid) - Toute la largeur */
 #game-container {
   height: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   padding: 16px;
   display: grid;
   gap: 12px;
@@ -201,7 +202,7 @@
   gap: 12px;
 }
 
-/* Cartes du centre - même largeur que les cartes du joueur */
+/* Cartes du centre - lignes de minimum 5 */
 .center-cards-section {
   width: 100%;
   display: grid;
@@ -209,13 +210,13 @@
 }
 
 .center-cards {
-  --center-card-w: 120px;
-  --center-card-h: 180px;
+  --center-card-w: 80px;
+  --center-card-h: 120px;
   display: grid;
-  grid-template-columns: repeat(3, var(--center-card-w));
-  grid-auto-rows: var(--center-card-h);
+  grid-template-columns: repeat(auto-fit, minmax(var(--center-card-w), 1fr));
   gap: 8px;
-  justify-content: center;
+  max-width: 100%;
+  justify-items: center;
   align-content: center;
 }
 
@@ -224,10 +225,13 @@
   height: var(--center-card-h);
   display: grid;
   place-items: center;
-  font-size: 1.6rem;
-  font-weight: 800;
   cursor: pointer;
   user-select: none;
+  transition: transform 0.2s ease;
+}
+
+.center-card:hover {
+  transform: translateY(-4px);
 }
 
 .center-card.hidden {
