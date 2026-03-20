@@ -63,18 +63,18 @@ const GameBoard: React.FC = () => {
     const gap = 8
     
     // Calculer le nombre de lignes nécessaires
-    let cardsPerRow = Math.max(minCardsPerRow, Math.floor(containerWidth / (maxCardWidth + gap)))
-    let linesNeeded = Math.ceil(cardCount / cardsPerRow)
+    const cardsPerRow = Math.max(minCardsPerRow, Math.floor(containerWidth / (maxCardWidth + gap)))
+    const linesNeeded = Math.ceil(cardCount / cardsPerRow)
     
     // Si trop de lignes, réduire la taille des cartes
     if (linesNeeded > 1) {
       // Augmenter le nombre de cartes par ligne pour réduire les lignes
-      cardsPerRow = Math.min(cardCount, Math.floor(containerWidth / (60 + gap)))
-      linesNeeded = Math.ceil(cardCount / cardsPerRow)
+      const newCardsPerRow = Math.min(cardCount, Math.floor(containerWidth / (60 + gap)))
+      const newLinesNeeded = Math.ceil(cardCount / newCardsPerRow)
+      container.setAttribute('data-lines', newLinesNeeded > 5 ? '6+' : newLinesNeeded.toString())
+    } else {
+      container.setAttribute('data-lines', linesNeeded.toString())
     }
-    
-    // Attribuer le nombre de lignes pour le CSS
-    container.setAttribute('data-lines', linesNeeded > 5 ? '6+' : linesNeeded.toString())
   }
 
   useEffect(() => {
