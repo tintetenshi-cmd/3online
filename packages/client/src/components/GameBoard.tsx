@@ -47,6 +47,51 @@ const GameBoard: React.FC = () => {
     }
   }, [state.currentView, setCurrentView])
 
+  // Adapter dynamiquement la taille des cartes selon le nombre de lignes
+  const calculateCardSize = () => {
+    const container = document.querySelector('.player-hand-cards') as HTMLElement
+    if (!container) return
+
+    const containerWidth = container.offsetWidth
+    const cardCount = myPlayer?.hand.length || 0
+    
+    if (cardCount === 0) return
+
+    // Calculer combien de cartes par ligne (minimum 5)
+    const minCardsPerRow = 5
+    const maxCardWidth = 72
+    const gap = 8
+    
+    // Calculer le nombre de lignes nécessaires
+    let cardsPerRow = Math.max(minCardsPerRow, Math.floor(containerWidth / (maxCardWidth + gap)))
+    let linesNeeded = Math.ceil(cardCount / cardsPerRow)
+    
+    // Si trop de lignes, réduire la taille des cartes
+    if (linesNeeded > 1) {
+      // Augmenter le nombre de cartes par ligne pour réduire les lignes
+      cardsPerRow = Math.min(cardCount, Math.floor(containerWidth / (60 + gap)))
+      linesNeeded = Math.ceil(cardCount / cardsPerRow)
+    }
+    
+    if (linesNeeded > 2) {
+      cardsPerRow = Math.min(cardCount, Math.floor(containerWidth / (50 + gap)))
+      linesNeeded = Math.ceil(cardCount / cardsPerRow)
+    }
+    
+    if (linesNeeded > 3) {
+      cardsPerRow = Math.min(cardCount, Math.floor(containerWidth / (42 + gap)))
+      linesNeeded = Math.ceil(cardCount / cardsPerRow)
+    }
+    
+    // Attribuer le nombre de lignes pour le CSS
+    container.setAttribute('data-lines', linesNeeded > 5 ? '6+' : linesNeeded.toString())
+  }
+
+  useEffect(() => {
+    calculateCardSize()
+    window.addEventListener('resize', calculateCardSize)
+    return () => window.removeEventListener('resize', calculateCardSize)
+  }, [myPlayer?.hand.length])
   // Détecter si on est sur mobile
   useEffect(() => {
     const checkMobile = () => {

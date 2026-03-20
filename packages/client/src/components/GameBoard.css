@@ -35,22 +35,22 @@
   100% { transform: rotate(360deg); }
 }
 
-/* Layout global (Grid) - Taille fixe */
+/* Layout global (Grid) - Plein écran adaptatif */
 #game-container {
+  width: 100vw;
   height: 100vh;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 16px;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  padding: 8px;
   display: grid;
-  gap: 12px;
-  grid-template-columns: 280px 1fr 320px;
+  gap: 8px;
+  grid-template-columns: 250px 1fr 300px;
   grid-template-rows: auto 1fr auto;
   grid-template-areas:
     "header header header"
     "players center chat"
     "hand hand hand";
-  min-height: 0;
-  flex: 1;
   overflow: hidden;
   box-sizing: border-box;
 }
@@ -594,27 +594,63 @@
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Cartes de la main - système d'inspection amélioré */
+/* Cartes de la main - système adaptatif dynamique */
 .player-hand-cards {
   flex: 1;
   display: flex;
   align-items: center;
-  justify-content: center;
-  min-width: 0;
-  overflow: hidden;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 120px;
 }
 
 .player-hand-card {
   width: 72px;
   height: 104px;
   font-weight: 800;
-  font-size: 1.25rem;
+  border-radius: 8px;
   cursor: pointer;
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .player-hand-card.hovered {
   transform: translateY(-6px);
   z-index: 2;
+}
+
+/* Adaptation dynamique selon le nombre de lignes */
+.player-hand-cards[data-lines="2"] .player-hand-card {
+  width: 60px;
+  height: 88px;
+  font-size: 0.9rem;
+}
+
+.player-hand-cards[data-lines="3"] .player-hand-card {
+  width: 50px;
+  height: 74px;
+  font-size: 0.8rem;
+}
+
+.player-hand-cards[data-lines="4"] .player-hand-card {
+  width: 42px;
+  height: 62px;
+  font-size: 0.7rem;
+}
+
+.player-hand-cards[data-lines="5"] .player-hand-card {
+  width: 36px;
+  height: 52px;
+  font-size: 0.6rem;
+}
+
+.player-hand-cards[data-lines="6+"] .player-hand-card {
+  width: 32px;
+  height: 46px;
+  font-size: 0.55rem;
 }
 
 /* Messages d'erreur */
