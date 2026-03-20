@@ -26,7 +26,7 @@ const GameBoard: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showPlayerModal, setShowPlayerModal] = useState(false)
-  const [trioNotifications, setTrioNotifications] = useState<Array<{id: string, type: 'success' | 'failure', message: string}>>([])
+  const [trioNotifications, setTrioNotifications] = useState<Array<{id: string, type: 'success' | 'failure', message: string, player?: any, trioNumber?: number}>>([])
 
   // Rediriger si pas dans une partie
   useEffect(() => {
@@ -54,9 +54,20 @@ const GameBoard: React.FC = () => {
     }
     
     checkMobile()
-    window.addEventListener('resize', checkMobile)
     
-    return () => window.removeEventListener('resize', checkMobile)
+    // Optimisation : utiliser requestAnimationFrame pour le resize
+    let rafId: number
+    const handleResize = () => {
+      cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(checkMobile)
+    }
+    
+    window.addEventListener('resize', handleResize, { passive: true })
+    
+    return () => {
+      window.removeEventListener('resize', handleResize)
+      cancelAnimationFrame(rafId)
+    }
   }, [])
 
   // Écouter les événements de jeu pour afficher les messages
@@ -64,6 +75,7 @@ const GameBoard: React.FC = () => {
     const socket = (window as any).gameSocket
     if (!socket) return
 
+    // Optimisation : mémoriser les handlers pour éviter les recréations
     const handleTrioFormed = (trio: any, playerId: string) => {
       const player = state.gameState?.players.find(p => p.id === playerId)
       if (player) {
@@ -73,15 +85,17 @@ const GameBoard: React.FC = () => {
         })
         setTimeout(() => setGameMessage(null), 3000)
 
-        // Ajouter notification de trio
+        // Ajouter popup de trio réussi
         const notificationId = generateUUID()
         setTrioNotifications(prev => [...prev, {
           id: notificationId,
           type: 'success',
-          message: `🎉 ${player.name} a réussi un trio de ${trio.number} !`
+          message: `Trio réussi !`,
+          player,
+          trioNumber: trio.number
         }])
 
-        // Supprimer la notification après 3 secondes
+        // Supprimer la popup après 3 secondes
         setTimeout(() => {
           setTrioNotifications(prev => prev.filter(n => n.id !== notificationId))
         }, 3000)
@@ -97,15 +111,16 @@ const GameBoard: React.FC = () => {
         })
         setTimeout(() => setGameMessage(null), 3000)
 
-        // Ajouter notification d'échec
+        // Ajouter popup d'échec de trio
         const notificationId = generateUUID()
         setTrioNotifications(prev => [...prev, {
           id: notificationId,
           type: 'failure',
-          message: `❌ ${player.name} a échoué son trio`
+          message: `Trio échoué`,
+          player
         }])
 
-        // Supprimer la notification après 3 secondes
+        // Supprimer la popup après 3 secondes
         setTimeout(() => {
           setTrioNotifications(prev => prev.filter(n => n.id !== notificationId))
         }, 3000)
@@ -505,16 +520,32 @@ const GameBoard: React.FC = () => {
         </button>
       )}
 
-      {/* Notifications de trio */}
+      {/* Popup de trio */}
       {trioNotifications.map((notification) => (
         <div
           key={notification.id}
-          className={`trio-notification ${notification.type}`}
+          className={`trio-popup ${notification.type}`}
         >
-          <span className="trio-notification-icon">
+          <div className="trio-popup-icon">
             {notification.type === 'success' ? '🎉' : '❌'}
-          </span>
-          {notification.message}
+          </div>
+          <AvatarBadge
+            avatar={notification.player?.avatar}
+            seed={notification.player?.avatarSeed || notification.player?.id}
+            size={80}
+            className="trio-popup-avatar"
+          />
+          <div className="trio-popup-title">
+            {notification.type === 'success' ? 'Trio Réussi !' : 'Trio Échoué'}
+          </div>
+          <div className="trio-popup-player">
+            {notification.player?.name}
+          </div>
+          {notification.trioNumber && (
+            <div className="trio-popup-number">
+              {notification.trioNumber}
+            </div>
+          )}
         </div>
       ))}
 
