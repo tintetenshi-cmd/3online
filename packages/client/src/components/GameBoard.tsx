@@ -26,6 +26,7 @@ const GameBoard: React.FC = () => {
   const [isChatOpen, setIsChatOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [showPlayerModal, setShowPlayerModal] = useState(false)
+  const [trioNotifications, setTrioNotifications] = useState<Array<{id: string, type: 'success' | 'failure', message: string}>>([])
 
   // Rediriger si pas dans une partie
   useEffect(() => {
@@ -71,6 +72,19 @@ const GameBoard: React.FC = () => {
           type: 'success'
         })
         setTimeout(() => setGameMessage(null), 3000)
+
+        // Ajouter notification de trio
+        const notificationId = generateUUID()
+        setTrioNotifications(prev => [...prev, {
+          id: notificationId,
+          type: 'success',
+          message: `🎉 ${player.name} a réussi un trio de ${trio.number} !`
+        }])
+
+        // Supprimer la notification après 3 secondes
+        setTimeout(() => {
+          setTrioNotifications(prev => prev.filter(n => n.id !== notificationId))
+        }, 3000)
       }
     }
 
@@ -82,6 +96,19 @@ const GameBoard: React.FC = () => {
           type: 'error'
         })
         setTimeout(() => setGameMessage(null), 3000)
+
+        // Ajouter notification d'échec
+        const notificationId = generateUUID()
+        setTrioNotifications(prev => [...prev, {
+          id: notificationId,
+          type: 'failure',
+          message: `❌ ${player.name} a échoué son trio`
+        }])
+
+        // Supprimer la notification après 3 secondes
+        setTimeout(() => {
+          setTrioNotifications(prev => prev.filter(n => n.id !== notificationId))
+        }, 3000)
       }
     }
 
@@ -477,6 +504,19 @@ const GameBoard: React.FC = () => {
           {isChatOpen ? '✕' : '💬'}
         </button>
       )}
+
+      {/* Notifications de trio */}
+      {trioNotifications.map((notification) => (
+        <div
+          key={notification.id}
+          className={`trio-notification ${notification.type}`}
+        >
+          <span className="trio-notification-icon">
+            {notification.type === 'success' ? '🎉' : '❌'}
+          </span>
+          {notification.message}
+        </div>
+      ))}
 
       {/* Modale de sélection de joueur */}
       {showPlayerModal && (

@@ -1098,8 +1098,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1108,8 +1108,8 @@
 }
 
 .player-modal {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
   border: 1px solid var(--border-soft);
   border-radius: 16px;
   width: 100%;
@@ -1138,21 +1138,21 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid var(--border-soft);
-  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .player-modal-header h3 {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 600;
-  color: var(--text);
+  color: #333;
 }
 
 .modal-close-btn {
   background: none;
   border: none;
-  color: var(--text-dim);
+  color: #666;
   font-size: 1.2rem;
   width: 36px;
   height: 36px;
@@ -1165,8 +1165,8 @@
 }
 
 .modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text);
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
 }
 
 .player-modal-content {
@@ -1178,7 +1178,7 @@
 .player-modal-content p {
   margin: 0 0 1.5rem 0;
   font-size: 1rem;
-  color: var(--text-dim);
+  color: #666;
   line-height: 1.5;
 }
 
@@ -1191,8 +1191,8 @@
 .player-modal-btn {
   width: 100%;
   padding: 1rem;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1200,8 +1200,8 @@
 }
 
 .player-modal-btn:hover {
-  background: var(--surface-strong);
-  border-color: var(--border);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(0, 0, 0, 0.2);
   transform: translateY(-1px);
 }
 
@@ -1225,10 +1225,93 @@
 .player-modal-info span:first-child {
   font-weight: 600;
   font-size: 1rem;
-  color: var(--text);
+  color: #333;
 }
 
 .player-modal-cards {
   font-size: 0.85rem;
-  color: var(--text-mute);
+  color: #888;
+}
+
+/* Notifications de trio */
+.trio-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  z-index: 1500;
+  animation: slideInRight 0.4s ease-out, fadeOut 0.3s ease-out 2.7s forwards;
+  max-width: 300px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.trio-notification.success {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(5, 150, 105, 0.9));
+  color: white;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.trio-notification.failure {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.9), rgba(220, 38, 38, 0.9));
+  color: white;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.trio-notification-icon {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(50px);
+  }
+}
+
+/* Notifications de trio - Mobile */
+@media (max-width: 768px) {
+  .trio-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+    padding: 0.8rem 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .trio-notification {
+    top: 8px;
+    right: 8px;
+    left: 8px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.8rem;
+  }
+
+  .trio-notification-icon {
+    font-size: 1rem;
+    margin-right: 0.4rem;
+  }
 }
