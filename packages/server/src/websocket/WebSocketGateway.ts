@@ -4,11 +4,33 @@ import {
   ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData,
   UUID, Player, GameState, GameStatus, GameAction, ActionResult,
   ChatMessage, RoomStatus, ConnectionStatus, AvatarType,
+  AIPlayer, AIDifficulty, AIStrategy, Trio, RoomState, VictoryResult, Card
 } from '@3online/shared';
 import { generateUUID } from '../utils/sharedUtils.js';
 import { RoomManager } from '../room/RoomManager.js';
 import { GameEngine } from '../game/GameEngine.js';
 import { AIEngine } from '../ai/AIEngine.js';
+
+interface ExtendedServerToClientEvents {
+  aiThinking: (data: { playerId: UUID; playerName: string; thinkingTime: number }) => void;
+  aiAction: (data: { playerId: UUID; playerName: string; action: GameAction; confidence: number; reasoning?: string }) => void;
+  gameStarted: (gameState: GameState) => void;
+  gameStateUpdated: (gameState: GameState) => void;
+  cardRevealed: (card: Card, playerId: UUID) => void;
+  trioFormed: (trio: Trio, playerId: UUID) => void;
+  trioFailed: (playerId: UUID) => void;
+  gameEnded: (victoryResult: VictoryResult) => void;
+  turnChanged: (playerId: UUID) => void;
+  roomUpdated: (roomState: RoomState) => void;
+  aiPlayerAdded: (player: Player) => void;
+  aiPlayerRemoved: (playerId: UUID) => void;
+  chatMessage: (message: ChatMessage) => void;
+  error: (message: string) => void;
+  playerDisconnected: (playerId: UUID, playerName: string) => void;
+  playerReconnected: (playerId: UUID, playerName: string) => void;
+  playerJoined: (player: Player) => void;
+  playerLeft: (playerId: UUID, playerName: string) => void;
+}
 
 type LocalAIPlayer = Player & {
   aiDifficulty?: 'EASY' | 'MEDIUM' | 'HARD';
@@ -23,7 +45,7 @@ interface AIDecision {
 export class WebSocketGateway {
   private io: SocketIOServer<
     ClientToServerEvents,
-    ServerToClientEvents,
+    ExtendedServerToClientEvents,
     InterServerEvents,
     SocketData
   >;
@@ -389,23 +411,51 @@ export class WebSocketGateway {
     }
   }
 
-  public broadcastToRoom<T extends keyof ServerToClientEvents>(
+  public broadcastToRoom<T extends keyof ExtendedServerToClientEvents>(
     roomId: UUID,
     event: T,
-    ...args: Parameters<ServerToClientEvents[T]>
+    ...args: Parameters<ExtendedServerToClientEvents[T]>
   ): void {
     this.io.to(roomId).emit(event, ...args);
   }
 
-  public sendToPlayer<T extends keyof ServerToClientEvents>(
+  public sendToPlayer<T extends keyof ExtendedServerToClientEvents>(
     playerId: UUID,
     event: T,
-    ...args: Parameters<ServerToClientEvents[T]>
+    ...args: Parameters<ExtendedServerToClientEvents[T]>
   ): void {
     this.connectedPlayers.get(playerId)?.emit(event, ...args);
   }
 
   private async processAITurnIfNeeded(gameState: GameState): Promise<void> {
+    const currentPlayer = gameState.players.find(p => p.id === gameState.currentPlayerId);
+    if (currentPlayer?.isAI && gameState.gameStatus === GameStatus.ACTIVE) {
+      await this.handleAITurn(gameState, gameState.currentPlayerId);
+    }
+  }
+
+  private convertToAIPlayer(player: Player, aiDifficulty?: AIDifficulty): AIPlayer {
+    const strategy = aiDifficulty ? {
+      aggressiveness: aiDifficulty === 'EASY' ? 0.3 : aiDifficulty === 'MEDIUM' ? 0.6 : 0.8,
+      patience: aiDifficulty === 'EASY' ? 0.2 : aiDifficulty === 'MEDIUM' ? 0.5 : 0.8,
+      memory: aiDifficulty === 'EASY' ? 0.4 : aiDifficulty === 'MEDIUM' ? 0.7 : 0.95,
+      riskTolerance: aiDifficulty === 'EASY' ? 0.7 : aiDifficulty === 'MEDIUM' ? 0.4 : 0.2,
+    } : {
+      aggressiveness: 0.6,
+      patience: 0.5,
+      memory: 0.7,
+      riskTolerance: 0.4,
+    };
+
+    return {
+      ...player,
+      isAI: true,
+      aiDifficulty: aiDifficulty || AIDifficulty.MEDIUM,
+      strategy,
+    };
+  }
+
+  private async handleAITurn(gameState: GameState, currentPlayerId: UUID): Promise<void> {
     const currentPlayer = gameState.players.find(
       (p: Player) => p.id === gameState.currentPlayerId
     );
@@ -425,7 +475,7 @@ export class WebSocketGateway {
 
       const decision: AIDecision = await this.aiEngine.makeDecision(
         gameState,
-        aiPlayer as unknown as import('@3online/shared').AIPlayer,
+        this.convertToAIPlayer(aiPlayer, aiPlayer.aiDifficulty as AIDifficulty),
         { availableActions }
       );
 
@@ -435,7 +485,7 @@ export class WebSocketGateway {
         playerId: aiPlayer.id,
         playerName: aiPlayer.name,
         thinkingTime,
-      });
+      } as any);
 
       await new Promise<void>((resolve) => setTimeout(resolve, thinkingTime));
 
@@ -446,7 +496,13 @@ export class WebSocketGateway {
       );
 
       if (result.success && result.newGameState) {
-        this.broadcastToRoom(gameState.roomId, 'aiAction', decision.action, result);
+        this.broadcastToRoom(gameState.roomId, 'aiAction', {
+          playerId: aiPlayer.id,
+          playerName: aiPlayer.name,
+          action: decision.action,
+          confidence: decision.confidence,
+          reasoning: decision.reasoning
+        });
         this.broadcastToRoom(gameState.roomId, 'gameStateUpdated', result.newGameState);
 
         if (result.revealedCard) {

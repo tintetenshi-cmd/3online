@@ -1,11 +1,13 @@
 /* GameBoard - Layout optimisé et responsive */
 .game-board {
-  height: 100vh;
+  height: 100%;
   /* Fond unifié (violet pastel) */
   background: var(--app-bg);
   color: white;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .game-board--loading {
@@ -47,6 +49,8 @@
     "header header header"
     "players center chat"
     "hand hand hand";
+  min-height: 0;
+  flex: 1;
 }
 
 /* Header */
@@ -70,6 +74,7 @@
   margin: 0;
   background: linear-gradient(45deg, var(--text, #fff), var(--accent-2, #c4b5fd));
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -627,18 +632,69 @@
 @media (max-width: 1024px) {
   #game-container {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto 1fr auto auto;
+    grid-template-rows: auto auto 1fr auto;
     grid-template-areas:
       "header"
       "players"
       "center"
-      "chat"
       "hand";
+    padding: 12px;
+    gap: 10px;
   }
 
+  /* Chat mobile - caché par défaut, flottant */
   .chat-sidebar {
-    width: auto;
-    min-height: 220px;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    width: 350px;
+    height: 400px;
+    max-height: 70vh;
+    background: var(--surface);
+    backdrop-filter: blur(15px);
+    border: 1px solid var(--border-soft);
+    border-radius: 14px 14px 0 0;
+    display: none;
+    flex-direction: column;
+    z-index: 1000;
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .chat-sidebar.mobile-visible {
+    display: flex;
+    transform: translateY(0);
+  }
+
+  /* Bouton toggle chat mobile */
+  .chat-toggle-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: var(--surface);
+    backdrop-filter: blur(15px);
+    border: 2px solid var(--border-soft);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 999;
+    transition: all 0.3s ease;
+    color: var(--text);
+    font-size: 1.5rem;
+  }
+
+  .chat-toggle-btn:hover {
+    background: var(--surface-strong);
+    transform: scale(1.1);
+  }
+
+  .chat-toggle-btn.chat-open {
+    background: var(--accent-2);
+    color: var(--app-bg);
   }
 
   .opponents-section {
@@ -649,93 +705,328 @@
   .opponent-card {
     min-width: 240px;
   }
+
+  .game-board {
+    padding: 0;
+  }
 }
 
 @media (max-width: 768px) {
+  .game-board {
+    padding: 0;
+  }
+
+  #game-container {
+    padding: 8px;
+    gap: 8px;
+  }
+
   .game-header {
-    padding: 12px;
+    padding: 10px;
     flex-direction: column;
     gap: 0.5rem;
     text-align: center;
   }
 
-  #game-container {
-    padding: 12px;
-    gap: 10px;
+  .game-title h1 {
+    font-size: 1.2rem;
+  }
+
+  .room-code {
+    font-size: 0.8rem;
+  }
+
+  .opponents-section {
+    padding: 8px;
+    gap: 8px;
+  }
+
+  .opponent-card {
+    min-width: 200px;
+    padding: 10px;
+  }
+
+  .opponent-avatar {
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
+
+  .opponent-name {
+    font-size: 0.9rem;
+  }
+
+  .opponent-stats {
+    font-size: 0.8rem;
+    gap: 0.5rem;
+  }
+
+  .game-center {
+    gap: 8px;
+    padding: 8px;
   }
 
   .center-cards {
-    --center-card-w: 80px;
-    --center-card-h: 120px;
+    --center-card-w: 70px;
+    --center-card-h: 105px;
+    gap: 8px;
   }
 
   .action-buttons {
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    padding: 8px;
   }
 
   .action-buttons .btn {
     width: 100%;
+    max-width: 200px;
   }
 
   .player-hand-bar {
-    height: 120px;
-    padding: 10px 12px;
+    height: 110px;
+    padding: 8px;
+    gap: 8px;
   }
 
   .player-hand-card {
-    width: 60px;
-    height: 90px;
-    font-size: 1.05rem;
+    width: 55px;
+    height: 85px;
+    font-size: 1rem;
   }
-  
+
+  .player-hand-info {
+    gap: 0.4rem;
+  }
+
+  .hand-info {
+    font-size: 0.8rem;
+  }
+
+  .hand-count,
+  .trio-count {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .my-trio-mini {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+  }
+
   .turn-indicator {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
   }
-  
+
   .game-message {
-    padding: 0.75rem 1.5rem;
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+  }
+
+  /* Chat mobile optimisé */
+  .chat-sidebar {
+    width: 100%;
+    height: 350px;
+    max-height: 60vh;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .chat-toggle-btn {
+    width: 50px;
+    height: 50px;
+    bottom: 15px;
+    right: 15px;
+    font-size: 1.2rem;
+  }
+
+  .chat-header {
+    padding: 1rem;
+  }
+
+  .chat-header h3 {
     font-size: 1rem;
   }
-  
-  .chat-sidebar {
-    min-height: 180px;
+
+  .chat-messages {
+    padding: 0.8rem 1rem;
+  }
+
+  .chat-message {
+    font-size: 0.85rem;
+    padding: 0.6rem;
+  }
+
+  .chat-input {
+    padding: 1rem;
+  }
+
+  .chat-input input {
+    padding: 0.6rem;
+    font-size: 0.9rem;
   }
 }
 
 @media (max-width: 480px) {
+  .game-board {
+    padding: 0;
+  }
+
+  #game-container {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .game-header {
+    padding: 8px;
+  }
+
+  .game-title h1 {
+    font-size: 1.1rem;
+  }
+
+  .room-code {
+    font-size: 0.75rem;
+  }
+
+  .opponents-section {
+    padding: 4px;
+    gap: 6px;
+  }
+
+  .opponent-card {
+    min-width: 160px;
+    padding: 8px;
+  }
+
+  .opponent-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+  }
+
+  .opponent-name {
+    font-size: 0.85rem;
+  }
+
+  .opponent-stats {
+    font-size: 0.75rem;
+    gap: 0.4rem;
+  }
+
+  .ai-badge {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+  }
+
+  .game-center {
+    gap: 6px;
+    padding: 6px;
+  }
+
   .center-cards {
-    --center-card-w: 76px;
-    --center-card-h: 114px;
+    --center-card-w: 60px;
+    --center-card-h: 90px;
+    gap: 6px;
+  }
+
+  .action-buttons {
+    padding: 6px;
+    gap: 0.4rem;
+  }
+
+  .action-buttons .btn {
+    font-size: 0.85rem;
+    padding: 0.5rem 1rem;
   }
 
   .player-hand-bar {
-    height: 112px;
-    padding: 10px;
-    gap: 10px;
+    height: 100px;
+    padding: 6px;
+    gap: 6px;
   }
 
   .player-hand-card {
-    width: 54px;
-    height: 82px;
-    font-size: 0.95rem;
+    width: 48px;
+    height: 72px;
+    font-size: 0.9rem;
   }
-  
+
+  .player-hand-info {
+    gap: 0.3rem;
+  }
+
   .hand-info {
-    font-size: 0.8rem;
-  }
-  
-  .my-trio-mini {
-    width: 22px;
-    height: 22px;
     font-size: 0.7rem;
   }
-  
+
+  .hand-count,
+  .trio-count {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+  }
+
+  .my-trio-mini {
+    width: 20px;
+    height: 20px;
+    font-size: 0.65rem;
+  }
+
   .turn-indicator,
   .game-message {
     padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+
+  /* Chat mobile ultra-compact */
+  .chat-sidebar {
+    height: 300px;
+    max-height: 50vh;
+  }
+
+  .chat-toggle-btn {
+    width: 45px;
+    height: 45px;
+    bottom: 10px;
+    right: 10px;
+    font-size: 1rem;
+  }
+
+  .chat-header {
+    padding: 0.8rem;
+  }
+
+  .chat-header h3 {
     font-size: 0.9rem;
+  }
+
+  .chat-messages {
+    padding: 0.6rem 0.8rem;
+  }
+
+  .chat-message {
+    font-size: 0.8rem;
+    padding: 0.5rem;
+  }
+
+  .chat-input {
+    padding: 0.8rem;
+  }
+
+  .chat-input input {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .message-author {
+    font-size: 0.8rem;
+  }
+
+  .message-avatar {
+    width: 18px;
+    height: 18px;
+    font-size: 12px;
   }
 }

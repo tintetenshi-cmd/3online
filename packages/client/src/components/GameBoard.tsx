@@ -23,6 +23,8 @@ const GameBoard: React.FC = () => {
   const [chatMessage, setChatMessage] = useState('')
   const [gameMessage, setGameMessage] = useState<{text: string, type: 'success' | 'error' | 'info'} | null>(null)
   const [hoveredCardIndex, setHoveredCardIndex] = useState<number | null>(null)
+  const [isChatOpen, setIsChatOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
   // Rediriger si pas dans une partie
   useEffect(() => {
@@ -42,6 +44,18 @@ const GameBoard: React.FC = () => {
       setCurrentView('game')
     }
   }, [state.currentView, setCurrentView])
+
+  // Détecter si on est sur mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 1024)
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Écouter les événements de jeu pour afficher les messages
   useEffect(() => {
@@ -377,7 +391,7 @@ const GameBoard: React.FC = () => {
       </main>
 
       {/* Chat (colonne droite) */}
-      <aside className="chat-sidebar" aria-label="Chat">
+      <aside className={`chat-sidebar ${isMobile && isChatOpen ? 'mobile-visible' : ''}`} aria-label="Chat">
           <div className="chat-header">
             <h3>💬 Chat</h3>
           </div>
@@ -464,6 +478,17 @@ const GameBoard: React.FC = () => {
         <div className="error-message">
           {state.error}
         </div>
+      )}
+
+      {/* Bouton toggle chat mobile */}
+      {isMobile && (
+        <button
+          className={`chat-toggle-btn ${isChatOpen ? 'chat-open' : ''}`}
+          onClick={() => setIsChatOpen(!isChatOpen)}
+          aria-label={isChatOpen ? 'Fermer le chat' : 'Ouvrir le chat'}
+        >
+          {isChatOpen ? '✕' : '💬'}
+        </button>
       )}
       </div>
     </div>
