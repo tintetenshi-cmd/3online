@@ -721,11 +721,14 @@
 @media (max-width: 768px) {
   .game-board {
     padding: 0;
+    overflow: auto; /* Permettre le scroll */
+    height: 100vh;
   }
 
   #game-container {
     padding: 8px;
     gap: 8px;
+    min-height: max-content; /* Permettre au contenu de s'étendre */
   }
 
   .game-header {
@@ -733,6 +736,7 @@
     flex-direction: column;
     gap: 0.5rem;
     text-align: center;
+    position: relative;
   }
 
   .game-title h1 {
@@ -741,6 +745,29 @@
 
   .room-code {
     font-size: 0.8rem;
+  }
+
+  /* Bouton pour fermer le chat sur mobile */
+  .chat-toggle-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    z-index: 100;
+  }
+
+  .chat-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
   }
 
   .opponents-section {
@@ -780,15 +807,19 @@
   }
 
   .action-buttons {
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
     padding: 8px;
+    flex-wrap: wrap;
   }
 
   .action-buttons .btn {
-    width: 100%;
-    max-width: 200px;
+    width: auto;
+    max-width: none;
+    min-width: 80px;
+    flex: 1;
   }
 
   .player-hand-bar {
@@ -874,6 +905,40 @@
     padding: 0.6rem;
     font-size: 0.9rem;
   }
+
+  /* Cartes personnelles sur mobile */
+  .player-hand-card {
+    width: 60px;
+    height: 85px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  .player-hand-cards {
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .player-hand-info {
+    padding: 8px;
+  }
+
+  .hand-info {
+    font-size: 0.8rem;
+    gap: 0.5rem;
+  }
+
+  .my-trios-display {
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .my-trio-mini {
+    width: 24px;
+    height: 34px;
+    font-size: 0.7rem;
+    border-radius: 4px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -942,11 +1007,18 @@
   .action-buttons {
     padding: 6px;
     gap: 0.4rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .action-buttons .btn {
     font-size: 0.85rem;
     padding: 0.5rem 1rem;
+    width: auto;
+    min-width: 70px;
+    flex: 1;
   }
 
   .player-hand-bar {

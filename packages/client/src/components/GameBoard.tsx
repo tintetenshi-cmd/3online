@@ -331,6 +331,15 @@ const GameBoard: React.FC = () => {
         <div className="game-title">
           <h1>3online</h1>
           <div className="room-code">Salle: {state.roomState.info.code}</div>
+          {isMobile && (
+            <button 
+              className="chat-toggle-btn" 
+              onClick={() => setIsChatOpen(!isChatOpen)}
+              aria-label={isChatOpen ? "Fermer le chat" : "Ouvrir le chat"}
+            >
+              {isChatOpen ? '✕' : '💬'}
+            </button>
+          )}
         </div>
         <Button
           variant="ghost"
