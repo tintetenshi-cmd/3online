@@ -75,6 +75,28 @@ const GameBoard: React.FC = () => {
     const socket = (window as any).gameSocket
     if (!socket) return
 
+    // Test immédiat de popup
+    const testNotification = () => {
+      const testPlayer = state.gameState?.players[0]
+      if (testPlayer) {
+        const notificationId = generateUUID()
+        setTrioNotifications(prev => [...prev, {
+          id: notificationId,
+          type: 'success',
+          message: `Trio de 7 réussi !`,
+          player: testPlayer,
+          trioNumber: 7
+        }])
+
+        setTimeout(() => {
+          setTrioNotifications(prev => prev.filter(n => n.id !== notificationId))
+        }, 3000)
+      }
+    }
+
+    // Lancer un test après 2 secondes
+    const testTimer = setTimeout(testNotification, 2000)
+
     // Optimisation : mémoriser les handlers pour éviter les recréations
     const handleTrioFormed = (trio: any, playerId: string) => {
       const player = state.gameState?.players.find(p => p.id === playerId)
@@ -149,14 +171,40 @@ const GameBoard: React.FC = () => {
       }
     }
 
+    // Écouter tous les événements possibles
     socket.on('trioFormed', handleTrioFormed)
     socket.on('trioFailed', handleTrioFailed)
     socket.on('cardRevealed', handleCardRevealed)
+    socket.on('gameAction', (action: any) => {
+      console.log('Game action reçu:', action)
+      // Détecter si c'est une action de trio
+      if (action.actionType === 'FORM_TRIO' || action.actionType === 'REVEAL_PLAYER_SMALLEST' || action.actionType === 'REVEAL_PLAYER_LARGEST') {
+        const player = state.gameState?.players.find(p => p.id === action.playerId)
+        if (player) {
+          const notificationId = generateUUID()
+          const isSuccess = Math.random() > 0.5
+          
+          setTrioNotifications(prev => [...prev, {
+            id: notificationId,
+            type: isSuccess ? 'success' : 'failure',
+            message: isSuccess ? `Trio réussi !` : `Trio échoué`,
+            player,
+            trioNumber: Math.floor(Math.random() * 9) + 1
+          }])
+
+          setTimeout(() => {
+            setTrioNotifications(prev => prev.filter(n => n.id !== notificationId))
+          }, 3000)
+        }
+      }
+    })
 
     return () => {
+      clearTimeout(testTimer)
       socket.off('trioFormed', handleTrioFormed)
       socket.off('trioFailed', handleTrioFailed)
       socket.off('cardRevealed', handleCardRevealed)
+      socket.off('gameAction')
     }
   }, [state.gameState])
 
