@@ -47,41 +47,6 @@ const GameBoard: React.FC = () => {
     }
   }, [state.currentView, setCurrentView])
 
-  // Adapter dynamiquement la taille des cartes selon le nombre de lignes
-  const calculateCardSize = () => {
-    const container = document.querySelector('.player-hand-cards') as HTMLElement
-    if (!container) return
-
-    const containerWidth = container.offsetWidth
-    const cardCount = myPlayer?.hand.length || 0
-    
-    if (cardCount === 0) return
-
-    // Calculer combien de cartes par ligne (minimum 5)
-    const minCardsPerRow = 5
-    const maxCardWidth = 72
-    const gap = 8
-    
-    // Calculer le nombre de lignes nécessaires
-    const cardsPerRow = Math.max(minCardsPerRow, Math.floor(containerWidth / (maxCardWidth + gap)))
-    const linesNeeded = Math.ceil(cardCount / cardsPerRow)
-    
-    // Si trop de lignes, réduire la taille des cartes
-    if (linesNeeded > 1) {
-      // Augmenter le nombre de cartes par ligne pour réduire les lignes
-      const newCardsPerRow = Math.min(cardCount, Math.floor(containerWidth / (60 + gap)))
-      const newLinesNeeded = Math.ceil(cardCount / newCardsPerRow)
-      container.setAttribute('data-lines', newLinesNeeded > 5 ? '6+' : newLinesNeeded.toString())
-    } else {
-      container.setAttribute('data-lines', linesNeeded.toString())
-    }
-  }
-
-  useEffect(() => {
-    calculateCardSize()
-    window.addEventListener('resize', calculateCardSize)
-    return () => window.removeEventListener('resize', calculateCardSize)
-  }, [myPlayer?.hand.length])
   // Détecter si on est sur mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -269,7 +234,6 @@ const GameBoard: React.FC = () => {
   }, [state.gameState])
 
   if (!state.gameState || !state.roomState) {
-    console.log('Pas de gameState ou roomState, affichage loading')
     return (
       <div className="game-board game-board--loading">
         <div className="loading-spinner">
@@ -279,10 +243,6 @@ const GameBoard: React.FC = () => {
       </div>
     )
   }
-
-  console.log('GameState disponible:', !!state.gameState, 'RoomState disponible:', !!state.roomState)
-  console.log('Nombre de joueurs:', state.gameState?.players.length)
-  console.log('Joueur actuel:', state.gameState?.currentPlayerId)
 
   const currentPlayer = state.gameState.players.find((p: any) => p.id === state.gameState!.currentPlayerId)
   const isMyTurn = state.gameState.currentPlayerId === state.playerId
