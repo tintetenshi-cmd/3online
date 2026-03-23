@@ -260,7 +260,7 @@ const GameBoard: React.FC = () => {
     console.log('selectedAction mis à jour:', actionType)
   }
 
-  const handlePlayerSelect = (playerId: string) => {
+  const handlePlayerSelect = async (playerId: string) => {
     console.log('handlePlayerSelect appelé avec playerId:', playerId, 'selectedAction:', selectedAction)
     if (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) {
       console.log('Envoi de l\'action directement')
@@ -273,7 +273,8 @@ const GameBoard: React.FC = () => {
           targetPlayerId: playerId, // Utiliser targetPlayerId au lieu de targetPlayer
           timestamp: Date.now(),
         }
-        sendGameAction(action)
+        console.log('Action envoyée:', action)
+        await sendGameAction(action)
         setSelectedAction(null) // Réinitialiser après l'envoi
       } catch (error) {
         console.error('Erreur lors de l\'envoi de l\'action:', error)

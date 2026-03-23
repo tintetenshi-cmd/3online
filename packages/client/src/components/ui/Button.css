@@ -59,19 +59,19 @@
 /* Variantes */
 .btn--primary {
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(147, 51, 234, 0.9);
-  border: 1px solid rgba(147, 51, 234, 0.3);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn--secondary {
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(147, 51, 234, 0.9);
-  border: 1px solid rgba(147, 51, 234, 0.3);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .btn--ghost {
   background: transparent;
-  color: var(--accent-2);
+  color: white;
   border: 1px solid transparent;
 }
 

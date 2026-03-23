@@ -155,7 +155,7 @@ socket.on('cardRevealed', (card: any, by: any) => {
       
       // Ajouter un message système pour la révélation de carte
       const playerName = getPlayerName(by)
-      const targetPlayerName = getPlayerName(card.targetPlayerId || by) // Corriger: utiliser targetPlayerId
+      const targetPlayerName = getPlayerName(card.targetPlayerId || card.ownerId || by) // Essayer plusieurs propriétés
       const systemMessage = {
         id: generateUUID(),
         playerId: 'system',
@@ -164,6 +164,7 @@ socket.on('cardRevealed', (card: any, by: any) => {
         timestamp: Date.now(),
         isSystemMessage: true
       }
+      console.log('Message système ajouté:', systemMessage)
       onChatMessage(systemMessage)
     })
 
@@ -179,6 +180,7 @@ socket.on('trioFormed', (trio: any, pid: any) => {
         timestamp: Date.now(),
         isSystemMessage: true
       }
+      console.log('Message système trio ajouté:', systemMessage)
       onChatMessage(systemMessage)
       
       // Mettre à jour le gameState avec le nouveau trio
