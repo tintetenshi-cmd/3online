@@ -271,7 +271,7 @@ const GameBoard: React.FC = () => {
           playerId: state.playerId!,
           actionType: selectedAction!,
           targetPlayerId: playerId, // Utiliser targetPlayerId au lieu de targetPlayer
-          timestamp: Date.now(),
+          timestamp: Date.now()
         }
         console.log('Action envoyée:', action)
         await sendGameAction(action)
