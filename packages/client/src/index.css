@@ -151,13 +151,13 @@ input, textarea {
 }
 
 a {
-  color: var(--color-purple-secondary);
+  color: white;
   text-decoration: none;
   transition: color var(--transition-fast);
 }
 
 a:hover {
-  color: var(--color-purple-light);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 /* Classes utilitaires */
@@ -284,13 +284,13 @@ a:hover {
 
 .btn-secondary {
   background: transparent;
-  color: var(--color-purple-secondary);
-  border: 2px solid var(--color-purple-secondary);
+  color: white;
+  border: 2px solid white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--color-purple-secondary);
-  color: white;
+  background: white;
+  color: black;
 }
 
 .btn-danger {
@@ -313,8 +313,8 @@ a:hover {
 }
 
 .input:focus {
-  border-color: var(--color-purple-primary);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  border-color: white;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
 .input::placeholder {
@@ -410,17 +410,17 @@ a:hover {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-purple-primary);
+  background: white;
   border-radius: var(--radius-full);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--color-purple-secondary);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 /* Focus visible pour l'accessibilité */
 *:focus-visible {
-  outline: 2px solid var(--color-purple-primary);
+  outline: 2px solid white;
   outline-offset: 2px;
 }
 /* Correction des dropdowns - fond noir */
@@ -438,8 +438,8 @@ select {
 }
 
 select:focus {
-  border-color: var(--color-purple-primary);
-  box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.1);
+  border-color: white;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
 select option {

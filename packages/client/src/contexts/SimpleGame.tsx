@@ -160,6 +160,7 @@ socket.on('cardRevealed', (card: any, by: any) => {
         id: generateUUID(),
         playerId: 'system',
         playerName: 'Système',
+        content: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
         message: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
         timestamp: Date.now(),
         isSystemMessage: true
@@ -177,6 +178,7 @@ socket.on('trioFormed', (trio: any, pid: any) => {
         id: generateUUID(),
         playerId: 'system',
         playerName: 'Système',
+        content: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
         message: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
         timestamp: Date.now(),
         isSystemMessage: true
@@ -189,6 +191,7 @@ socket.on('trioFormed', (trio: any, pid: any) => {
         id: generateUUID(),
         playerId: 'system',
         playerName: 'Système',
+        content: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
         message: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
         timestamp: Date.now(),
         isSystemMessage: true
