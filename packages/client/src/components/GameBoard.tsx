@@ -248,6 +248,10 @@ const GameBoard: React.FC = () => {
   const isMyTurn = state.gameState.currentPlayerId === state.playerId
   const myPlayer = state.gameState.players.find((p: any) => p.id === state.playerId)
 
+  const handleActionSelect = (actionType: ActionType) => {
+    setSelectedAction(actionType)
+  }
+
   const handleCenterCardClick = async (cardId: string) => {
     if (!isMyTurn || selectedAction !== ActionType.REVEAL_CENTER_CARD) return
 
