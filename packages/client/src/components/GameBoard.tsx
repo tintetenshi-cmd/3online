@@ -27,6 +27,7 @@ const GameBoard: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false)
   const [showPlayerModal, setShowPlayerModal] = useState(false)
   const [trioNotifications, setTrioNotifications] = useState<Array<{id: string, type: 'success' | 'failure', message: string, player?: any, trioNumber?: number}>>([])
+  const [chatMessagesRef, setChatMessagesRef] = useState<HTMLDivElement | null>(null)
 
   // Rediriger si pas dans une partie
   useEffect(() => {
@@ -47,7 +48,12 @@ const GameBoard: React.FC = () => {
     }
   }, [state.currentView, setCurrentView])
 
-  // Détecter si on est sur mobile
+  // Scroll automatique du chat vers le bas
+  useEffect(() => {
+    if (chatMessagesRef && state.chatMessages.length > 0) {
+      chatMessagesRef.scrollTop = chatMessagesRef.scrollHeight
+    }
+  }, [state.chatMessages, chatMessagesRef])
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth <= 1024)
@@ -249,7 +255,23 @@ const GameBoard: React.FC = () => {
   const myPlayer = state.gameState.players.find((p: any) => p.id === state.playerId)
 
   const handleActionSelect = (actionType: ActionType) => {
-    setSelectedAction(actionType)
+    if (actionType === ActionType.REVEAL_PLAYER_SMALLEST || actionType === ActionType.REVEAL_PLAYER_LARGEST) {
+      // Mettre en surbrillance les joueurs au lieu d'ouvrir la modale
+      setSelectedAction(actionType)
+      setShowPlayerModal(false)
+    } else {
+      setSelectedAction(actionType)
+    }
+  }
+
+  const handlePlayerSelect = (playerId: string) => {
+    if (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) {
+      // Envoyer l'action directement
+      handlePlayerCardAction(playerId, selectedAction!)
+    } else {
+      setSelectedPlayer(playerId)
+      setShowPlayerModal(true)
+    }
   }
 
   const handleCenterCardClick = async (cardId: string) => {
@@ -364,7 +386,13 @@ const GameBoard: React.FC = () => {
               key={player.id}
               className={`opponent-card ${
                 player.id === state.gameState!.currentPlayerId ? 'current-player' : ''
+              } ${
+                (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) && isMyTurn
+                  ? 'highlighted' 
+                  : ''
               }`}
+              onClick={() => isMyTurn && handlePlayerSelect(player.id)}
+              style={{ cursor: isMyTurn ? 'pointer' : 'default' }}
             >
               <div className="opponent-header">
                 <div className="opponent-avatar">
@@ -518,7 +546,7 @@ const GameBoard: React.FC = () => {
           <div className="chat-header">
             <h3>💬 Chat</h3>
           </div>
-          <div className="chat-messages">
+          <div className="chat-messages" ref={setChatMessagesRef}>
             {state.chatMessages.slice(-20).map((message) => {
               const author = state.gameState?.players.find((p: any) => p.id === message.playerId)
               const t = pseudoTextStyle((author as any)?.nameColor)
