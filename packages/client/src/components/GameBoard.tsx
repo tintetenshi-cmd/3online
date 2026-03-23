@@ -270,7 +270,7 @@ const GameBoard: React.FC = () => {
           actionId: generateUUID(),
           playerId: state.playerId!,
           actionType: selectedAction!,
-          targetPlayer: { playerId },
+          targetPlayerId: playerId, // Utiliser targetPlayerId au lieu de targetPlayer
           timestamp: Date.now(),
         }
         sendGameAction(action)

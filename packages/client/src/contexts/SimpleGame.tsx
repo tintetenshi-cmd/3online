@@ -145,25 +145,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     socket.on('aiThinking', (d: any) => console.log(`${d.playerName} réfléchit...`))
     socket.on('aiAction', (d: any) => console.log(`joué:`, d))
     socket.on('gameStateUpdated', onGameStateUpdated)
-    socket.on('cardRevealed', (card: any, by: any) => {
+    const getPlayerName = (playerId: string) => {
+  const player = gameState?.players.find((p: any) => p.id === playerId)
+  return player?.name || 'Joueur inconnu'
+}
+
+socket.on('cardRevealed', (card: any, by: any) => {
       console.log('Carte révélée:', card, 'par', by)
       
       // Ajouter un message système pour la révélation de carte
       const playerName = getPlayerName(by)
+      const targetPlayerName = getPlayerName(card.playerId || by) // Adapter selon la structure
       const systemMessage = {
         id: generateUUID(),
         playerId: 'system',
         playerName: 'Système',
-        message: `👁 ${playerName} a révelé la carte ${card.isRevealed ? card.number : '?'} de ${getPlayerName(by)}`,
+        message: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
         timestamp: Date.now(),
         isSystemMessage: true
       }
       onChatMessage(systemMessage)
     })
-    const getPlayerName = (playerId: string) => {
-  const player = gameState?.players.find((p: any) => p.id === playerId)
-  return player?.name || 'Joueur inconnu'
-}
 
 socket.on('trioFormed', (trio: any, pid: any) => {
       console.log('Trio formé:', trio, 'par', pid)
