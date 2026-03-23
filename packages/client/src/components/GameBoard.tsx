@@ -262,6 +262,7 @@ const GameBoard: React.FC = () => {
 
   const handlePlayerSelect = async (playerId: string) => {
     console.log('handlePlayerSelect appelé avec playerId:', playerId, 'selectedAction:', selectedAction)
+    
     if (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) {
       console.log('Envoi de l\'action directement')
       // Envoyer l'action directement sans passer par la modale
@@ -270,7 +271,7 @@ const GameBoard: React.FC = () => {
           actionId: generateUUID(),
           playerId: state.playerId!,
           actionType: selectedAction!,
-          targetPlayerId: playerId, // Utiliser targetPlayerId au lieu de targetPlayer
+          targetPlayer: playerId, // Utiliser targetPlayer au lieu de targetPlayerId
           timestamp: Date.now()
         }
         console.log('Action envoyée:', action)
