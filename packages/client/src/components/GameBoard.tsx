@@ -255,20 +255,18 @@ const GameBoard: React.FC = () => {
   const myPlayer = state.gameState.players.find((p: any) => p.id === state.playerId)
 
   const handleActionSelect = (actionType: ActionType) => {
-    if (actionType === ActionType.REVEAL_PLAYER_SMALLEST || actionType === ActionType.REVEAL_PLAYER_LARGEST) {
-      // Mettre en surbrillance les joueurs au lieu d'ouvrir la modale
-      setSelectedAction(actionType)
-      setShowPlayerModal(false)
-    } else {
-      setSelectedAction(actionType)
-    }
+    console.log('handleActionSelect appelé avec:', actionType)
+    setSelectedAction(actionType)
+    console.log('selectedAction mis à jour:', actionType)
   }
 
   const handlePlayerSelect = (playerId: string) => {
+    console.log('handlePlayerSelect appelé avec playerId:', playerId, 'selectedAction:', selectedAction)
     if (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) {
-      // Envoyer l'action directement
+      console.log('Envoi de l\'action directement')
       handlePlayerCardAction(playerId, selectedAction!)
     } else {
+      console.log('Ouverture de la modale')
       setSelectedPlayer(playerId)
       setShowPlayerModal(true)
     }
@@ -381,17 +379,24 @@ const GameBoard: React.FC = () => {
       <aside className="opponents-section" aria-label="Joueurs">
         {state.gameState.players
           .filter(p => p.id !== state.playerId)
-          .map((player) => (
+          .map((player) => {
+            const isHighlighted = (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) && isMyTurn
+            console.log('Joueur:', player.name, 'isHighlighted:', isHighlighted, 'selectedAction:', selectedAction, 'isMyTurn:', isMyTurn)
+            
+            return (
             <div
               key={player.id}
               className={`opponent-card ${
                 player.id === state.gameState!.currentPlayerId ? 'current-player' : ''
               } ${
-                (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) && isMyTurn
-                  ? 'highlighted' 
-                  : ''
+                isHighlighted ? 'highlighted' : ''
               }`}
-              onClick={() => isMyTurn && handlePlayerSelect(player.id)}
+              onClick={() => {
+                console.log('Clic sur joueur:', player.name)
+                if (isMyTurn) {
+                  handlePlayerSelect(player.id)
+                }
+              }}
               style={{ cursor: isMyTurn ? 'pointer' : 'default' }}
             >
               <div className="opponent-header">
@@ -428,7 +433,8 @@ const GameBoard: React.FC = () => {
                 </div>
               )}
             </div>
-          ))}
+            )
+          })}
       </aside>
 
       {/* Centre (zone de jeu) */}
