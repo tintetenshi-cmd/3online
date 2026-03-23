@@ -5,30 +5,54 @@
   align-items: center;
   justify-content: center;
   border: none;
-  border-radius: 8px;
+  border-radius: 12px;
   font-family: inherit;
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   overflow: hidden;
   user-select: none;
   outline: none;
   min-height: 44px; /* mobile touch-friendly */
   border: 1px solid transparent; /* permet un hover borduré sans shift */
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  transform: scale(0);
 }
 
 .btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(147, 51, 234, 0.25);
+}
+
+.btn:hover::before {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.1s ease;
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.2);
+  transition: all 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.btn:active::before {
+  opacity: 0.8;
+  transform: scale(0.95);
 }
 
 .btn:focus-visible {
@@ -61,9 +85,25 @@
   background:
     radial-gradient(120% 160% at 20% 10%, rgba(255, 255, 255, 0.16), transparent 55%),
     linear-gradient(135deg, rgba(168, 85, 247, 0.55) 0%, rgba(196, 181, 253, 0.40) 45%, rgba(124, 58, 237, 0.40) 100%);
-  color: #ffffff;
-  box-shadow: var(--shadow-tight, 0 10px 24px rgba(0, 0, 0, 0.28));
-  border-color: rgba(233, 213, 255, 0.28);
+  color: white;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.15);
+}
+
+.btn--primary::before {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.4) 0%, transparent 70%);
+}
+
+.btn--primary:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(147, 51, 234, 0.35);
+  border-color: rgba(196, 181, 253, 0.5);
+}
+
+.btn--primary:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.25);
+  border-color: rgba(124, 58, 237, 0.6);
 }
 
 .btn--primary:hover:not(.btn--disabled) {
@@ -106,9 +146,26 @@
 
 .btn--secondary {
   background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  border: 1px solid var(--border);
+  color: rgba(147, 51, 234, 0.9);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
+}
+
+.btn--secondary::before {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+}
+
+.btn--secondary:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(147, 51, 234, 0.2);
+  border-color: rgba(147, 51, 234, 0.5);
+}
+
+.btn--secondary:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.15);
+  border-color: rgba(147, 51, 234, 0.6);
 }
 
 .btn--secondary:hover:not(.btn--disabled) {
@@ -132,8 +189,26 @@
 
 .btn--ghost {
   background: transparent;
-  color: var(--accent-2);
-  border: 1px solid transparent;
+  color: rgba(147, 51, 234, 0.8);
+  border: 1px solid rgba(147, 51, 234, 0.2);
+  box-shadow: none;
+}
+
+.btn--ghost::before {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+}
+
+.btn--ghost:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(147, 51, 234, 0.15);
+  border-color: rgba(147, 51, 234, 0.4);
+  color: rgba(147, 51, 234, 1);
+}
+
+.btn--ghost:active {
+  transform: translateY(-1px) scale(0.98);
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.1);
+  border-color: rgba(147, 51, 234, 0.5);
 }
 
 .btn--ghost:hover:not(.btn--disabled) {

@@ -1,5 +1,6 @@
 // SimpleGame.tsx — lignes 1-15 à remplacer
 import { ReactNode, useState, createContext, useContext, useEffect, useCallback } from 'react'
+import { generateUUID } from '@3online/shared'
 import { io } from 'socket.io-client'
 
 const SERVER_URL = (import.meta as any).env?.VITE_SERVER_URL ?? window.location.origin
@@ -144,30 +145,54 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     socket.on('aiThinking', (d: any) => console.log(`${d.playerName} réfléchit...`))
     socket.on('aiAction', (d: any) => console.log(`joué:`, d))
     socket.on('gameStateUpdated', onGameStateUpdated)
-    socket.on('cardRevealed', (card: any, by: any) => console.log('Carte révélée:', card, 'par', by))
-    socket.on('trioFormed', (trio: any, pid: any) => {
+    socket.on('cardRevealed', (card: any, by: any) => {
+      console.log('Carte révélée:', card, 'par', by)
+      
+      // Ajouter un message système pour la révélation de carte
+      const playerName = getPlayerName(by)
+      const systemMessage = {
+        id: generateUUID(),
+        playerId: 'system',
+        playerName: 'Système',
+        message: `👁 ${playerName} a révelé la carte ${card.isRevealed ? card.number : '?'} de ${getPlayerName(by)}`,
+        timestamp: Date.now(),
+        isSystemMessage: true
+      }
+      onChatMessage(systemMessage)
+    })
+    const getPlayerName = (playerId: string) => {
+  const player = gameState?.players.find((p: any) => p.id === playerId)
+  return player?.name || 'Joueur inconnu'
+}
+
+socket.on('trioFormed', (trio: any, pid: any) => {
       console.log('Trio formé:', trio, 'par', pid)
+      
+      // Ajouter un message système dans le chat
+      const systemMessage = {
+        id: generateUUID(),
+        playerId: 'system',
+        playerName: 'Système',
+        message: `🎉 ${getPlayerName(pid)} a remporté le trio de ${trio.number} !`,
+        timestamp: Date.now(),
+        isSystemMessage: true
+      }
+      onChatMessage(systemMessage)
+      
       // Mettre à jour le gameState avec le nouveau trio
       setGameState((prev: any) => {
-        if (!prev?.gameState) return prev
-        const updatedPlayers = prev.gameState.players.map((player: any) => {
-          if (player.id === pid) {
+        if (!prev) return prev
+        const updatedPlayers = prev.players.map((p: any) => {
+          if (p.id === pid) {
             return {
-              ...player,
-              trios: [...player.trios, trio],
-              score: { ...player.score, trios: player.trios.length + 1 }
+              ...p,
+              trios: [...p.trios, trio],
+              score: { ...p.score, trios: p.trios.length + 1 }
             }
           }
-          return player
+          return p
         })
-        return {
-          ...prev,
-          gameState: {
-            ...prev.gameState,
-            players: updatedPlayers,
-            revealedCards: []
-          }
-        }
+        return { ...prev, players: updatedPlayers }
       })
     })
     socket.on('trioFailed', (pid: any) => console.log('Échec trio:', pid))

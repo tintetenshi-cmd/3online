@@ -264,7 +264,20 @@ const GameBoard: React.FC = () => {
     console.log('handlePlayerSelect appelé avec playerId:', playerId, 'selectedAction:', selectedAction)
     if (selectedAction === ActionType.REVEAL_PLAYER_SMALLEST || selectedAction === ActionType.REVEAL_PLAYER_LARGEST) {
       console.log('Envoi de l\'action directement')
-      handlePlayerCardAction(playerId, selectedAction!)
+      // Envoyer l'action directement sans passer par la modale
+      try {
+        const action = {
+          actionId: generateUUID(),
+          playerId: state.playerId!,
+          actionType: selectedAction!,
+          targetPlayer: { playerId },
+          timestamp: Date.now(),
+        }
+        sendGameAction(action)
+        setSelectedAction(null) // Réinitialiser après l'envoi
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi de l\'action:', error)
+      }
     } else {
       console.log('Ouverture de la modale')
       setSelectedPlayer(playerId)
