@@ -279,9 +279,8 @@ const GameBoard: React.FC = () => {
         console.error('Erreur lors de l\'envoi de l\'action:', error)
       }
     } else {
-      console.log('Ouverture de la modale')
-      setSelectedPlayer(playerId)
-      setShowPlayerModal(true)
+      // Ne plus ouvrir de modale pour les autres actions non plus petit/plus grand
+      console.log('Action non supportée pour le moment')
     }
   }
 
@@ -567,8 +566,8 @@ const GameBoard: React.FC = () => {
           </div>
           <div className="chat-messages" ref={setChatMessagesRef}>
             {state.chatMessages.slice(-20).map((message) => {
-              const author = state.gameState?.players.find((p: any) => p.id === message.playerId)
-              const t = pseudoTextStyle((author as any)?.nameColor)
+              const author = message.isSystemMessage ? null : state.gameState?.players.find((p: any) => p.id === message.playerId)
+              const t = author ? pseudoTextStyle((author as any)?.nameColor) : null
 
               return (
                 <div key={message.id} className={`chat-message ${message.isSystemMessage ? 'system' : ''}`}>
@@ -580,7 +579,7 @@ const GameBoard: React.FC = () => {
                         size={22}
                         className="message-avatar"
                       />
-                      <span className={`message-author-name pseudo-text ${t.extraClass}`} style={t.style}>
+                      <span className={`message-author-name pseudo-text ${t?.extraClass || ''}`} style={t?.style || {}}>
                         {message.playerName}:
                       </span>
                     </span>

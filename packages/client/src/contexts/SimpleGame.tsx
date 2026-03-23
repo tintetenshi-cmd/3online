@@ -155,7 +155,7 @@ socket.on('cardRevealed', (card: any, by: any) => {
       
       // Ajouter un message système pour la révélation de carte
       const playerName = getPlayerName(by)
-      const targetPlayerName = getPlayerName(card.playerId || by) // Adapter selon la structure
+      const targetPlayerName = getPlayerName(card.targetPlayerId || by) // Corriger: utiliser targetPlayerId
       const systemMessage = {
         id: generateUUID(),
         playerId: 'system',

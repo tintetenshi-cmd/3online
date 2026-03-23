@@ -58,10 +58,9 @@
 
 /* Variantes */
 .btn--primary {
-  background:
-    radial-gradient(120% 160% at 20% 10%, rgba(255, 255, 255, 0.16), transparent 55%),
-    linear-gradient(135deg, rgba(168, 85, 247, 0.55) 0%, rgba(196, 181, 253, 0.40) 45%, rgba(124, 58, 237, 0.40) 100%);
-  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(147, 51, 234, 0.9);
+  border: 1px solid rgba(147, 51, 234, 0.3);
 }
 
 .btn--secondary {
