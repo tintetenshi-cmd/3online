@@ -171,17 +171,30 @@ socket.on('cardRevealed', (card: any, by: any) => {
 socket.on('trioFormed', (trio: any, pid: any) => {
       console.log('Trio formé:', trio, 'par', pid)
       
-      // Ajouter un message système dans le chat
+      // Ajouter un message système détaillé dans le chat
+      const playerName = getPlayerName(pid)
       const systemMessage = {
         id: generateUUID(),
         playerId: 'system',
         playerName: 'Système',
-        message: `🎉 ${getPlayerName(pid)} a remporté le trio de ${trio.number} !`,
+        message: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
         timestamp: Date.now(),
         isSystemMessage: true
       }
       console.log('Message système trio ajouté:', systemMessage)
       onChatMessage(systemMessage)
+      
+      // Ajouter un message système avec les détails du trio
+      const trioDetails = {
+        id: generateUUID(),
+        playerId: 'system',
+        playerName: 'Système',
+        message: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
+        timestamp: Date.now(),
+        isSystemMessage: true
+      }
+      console.log('Détails du trio:', trioDetails)
+      onChatMessage(trioDetails)
       
       // Mettre à jour le gameState avec le nouveau trio
       setGameState((prev: any) => {
