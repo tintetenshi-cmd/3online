@@ -121,8 +121,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Ajouter un message système pour l'arrivée d'un joueur
       const joinMessage = {
         id: generateUUID(),
-        playerId: 'system',
-        playerName: 'Système',
+        playerId: player.id, // Utiliser l'ID du joueur concerné
+        playerName: player.name,
         content: `👋 ${player.name} a rejoint la partie`,
         message: `👋 ${player.name} a rejoint la partie`,
         timestamp: Date.now(),
@@ -131,14 +131,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       console.log('Message système rejoindre:', joinMessage)
       onChatMessage(joinMessage)
     }
-    const onPlayerLeft = (_pid: any, playerName: string) => {
+    const onPlayerLeft = (pid: any, playerName: string) => {
       console.log('Joueur parti:', playerName)
       
       // Ajouter un message système pour le départ d'un joueur
       const leaveMessage = {
         id: generateUUID(),
-        playerId: 'system',
-        playerName: 'Système',
+        playerId: pid, // Utiliser l'ID du joueur concerné
+        playerName: playerName,
         content: `👋 ${playerName} a quitté la partie`,
         message: `👋 ${playerName} a quitté la partie`,
         timestamp: Date.now(),
@@ -189,8 +189,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const targetPlayerName = getPlayerName(card.targetPlayerId || card.ownerId || by) // Essayer plusieurs propriétés
       const systemMessage = {
         id: generateUUID(),
-        playerId: 'system',
-        playerName: 'Système',
+        playerId: by, // Utiliser l'ID du joueur qui a révélé la carte
+        playerName: playerName,
         content: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
         message: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
         timestamp: Date.now(),
@@ -213,8 +213,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const playerName = getPlayerName(pid)
       const systemMessage = {
         id: generateUUID(),
-        playerId: 'system',
-        playerName: 'Système',
+        playerId: pid, // Utiliser l'ID du joueur qui a formé le trio
+        playerName: playerName,
         content: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
         message: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
         timestamp: Date.now(),
@@ -226,7 +226,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Ajouter un message système avec les détails du trio
       const trioDetails = {
         id: generateUUID(),
-        playerId: 'system',
+        playerId: 'system', // Garder 'system' pour les détails techniques
         playerName: 'Système',
         content: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
         message: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,

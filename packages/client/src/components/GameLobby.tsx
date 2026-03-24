@@ -231,18 +231,37 @@ const GameLobby: React.FC = () => {
               <h2>Chat</h2>
               <div className="chat-messages">
                 {state.chatMessages.map((message: any) => {
-                  const author = state.roomState.players.find((p: any) => p.id === message.playerId)
+                  // Pour les messages système, playerId = 'system', donc on cherche dans playerName
+                  let author = null
+                  let displayName = message.playerName || 'Système'
+                  
+                  if (!message.isSystemMessage) {
+                    // Messages de joueurs : chercher le joueur par son ID
+                    author = state.roomState?.players.find((p: any) => p.id === message.playerId)
+                    displayName = author?.name || message.playerName || 'Joueur inconnu'
+                  } else if (message.playerId !== 'system') {
+                    // Messages système avec un playerId spécifique (ex: révélations de cartes)
+                    author = state.roomState?.players.find((p: any) => p.id === message.playerId)
+                    if (author) {
+                      displayName = author.name
+                    }
+                  }
+                  
                   const t = pseudoTextStyle(author?.nameColor)
+                  
                   return (
                     <div key={message.id} className={`chat-message ${message.isSystemMessage ? 'system' : ''}`}>
-                      {!message.isSystemMessage && (
-                        <span className="message-author">
-                          <AvatarBadge avatar={author?.avatar} seed={author?.avatarSeed || author?.id || message.playerName} size={22} className="message-avatar" />
-                          <span className={`message-author-name pseudo-text ${t.extraClass}`} style={t.style}>
-                            {message.playerName}:
-                          </span>
+                      <span className="message-author">
+                        <AvatarBadge 
+                          avatar={author?.avatar} 
+                          seed={author?.avatarSeed || author?.id || message.playerName || 'system'} 
+                          size={22} 
+                          className="message-avatar" 
+                        />
+                        <span className={`message-author-name pseudo-text ${t.extraClass}`} style={t.style}>
+                          {displayName}:
                         </span>
-                      )}
+                      </span>
                       <span className="message-content">{message.message || message.content}</span>
                     </div>
                   )
