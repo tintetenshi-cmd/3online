@@ -1,5 +1,5 @@
 // SimpleGame.tsx — lignes 1-15 à remplacer
-import { ReactNode, useState, createContext, useContext, useEffect, useCallback } from 'react'
+import { ReactNode, useState, createContext, useContext, useEffect, useCallback, useRef } from 'react'
 import { generateUUID } from '@3online/shared'
 import { io } from 'socket.io-client'
 
@@ -90,6 +90,13 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
   const [roomState, setRoomState] = useState<any>(null)
   const [gameState, setGameState] = useState<any>(null)
   const [playerId, setPlayerId] = useState<string | null>(null)
+
+  // Refs pour accéder aux valeurs actuelles dans les callbacks
+  const roomStateRef = useRef(roomState)
+  const gameStateRef = useRef(gameState)
+  
+  useEffect(() => { roomStateRef.current = roomState }, [roomState])
+  useEffect(() => { gameStateRef.current = gameState }, [gameState])
 
   // ── Listeners socket — montés UNE SEULE FOIS ─────────────────
   useEffect(() => {
@@ -186,17 +193,17 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       console.log('Carte révélée:', card, 'par', by)
       
       const getPlayerName = (playerId: string) => {
-        const player = gameState?.players.find((p: any) => p.id === playerId)
-        const roomPlayer = roomState?.players.find((p: any) => p.id === playerId)
+        const player = gameStateRef.current?.players?.find((p: any) => p.id === playerId)
+        const roomPlayer = roomStateRef.current?.players?.find((p: any) => p.id === playerId)
         return player?.name || roomPlayer?.name || 'Joueur inconnu'
       }
       
       // Ajouter un message système pour la révélation de carte
       const playerName = getPlayerName(by)
-      const targetPlayerName = getPlayerName(card.targetPlayerId || card.ownerId || by) // Essayer plusieurs propriétés
+      const targetPlayerName = getPlayerName(card.targetPlayerId || card.ownerId || by)
       const systemMessage = {
         id: generateUUID(),
-        playerId: by, // Utiliser l'ID du joueur qui a révélé la carte
+        playerId: by,
         playerName: playerName,
         content: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
         message: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
@@ -211,8 +218,8 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       console.log('Trio formé:', trio, 'par', pid)
       
       const getPlayerName = (playerId: string) => {
-        const player = gameState?.players.find((p: any) => p.id === playerId)
-        const roomPlayer = roomState?.players.find((p: any) => p.id === playerId)
+        const player = gameStateRef.current?.players?.find((p: any) => p.id === playerId)
+        const roomPlayer = roomStateRef.current?.players?.find((p: any) => p.id === playerId)
         return player?.name || roomPlayer?.name || 'Joueur inconnu'
       }
       
@@ -220,7 +227,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       const playerName = getPlayerName(pid)
       const systemMessage = {
         id: generateUUID(),
-        playerId: pid, // Utiliser l'ID du joueur qui a formé le trio
+        playerId: pid,
         playerName: playerName,
         content: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
         message: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
@@ -233,7 +240,7 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       // Ajouter un message système avec les détails du trio
       const trioDetails = {
         id: generateUUID(),
-        playerId: 'system', // Garder 'system' pour les détails techniques
+        playerId: 'system',
         playerName: 'Système',
         content: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
         message: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
