@@ -115,8 +115,38 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
       setErrorState('Serveur inaccessible. Rechargez la page.')
     }
     const onRoomUpdated = (rs: any) => setRoomState(rs)
-    const onPlayerJoined = (player: any) => console.log('Joueur rejoint:', player.name)
-    const onPlayerLeft = (_pid: any, playerName: string) => console.log('Joueur parti:', playerName)
+    const onPlayerJoined = (player: any) => {
+      console.log('Joueur rejoint:', player.name)
+      
+      // Ajouter un message système pour l'arrivée d'un joueur
+      const joinMessage = {
+        id: generateUUID(),
+        playerId: 'system',
+        playerName: 'Système',
+        content: `👋 ${player.name} a rejoint la partie`,
+        message: `👋 ${player.name} a rejoint la partie`,
+        timestamp: Date.now(),
+        isSystemMessage: true
+      }
+      console.log('Message système rejoindre:', joinMessage)
+      onChatMessage(joinMessage)
+    }
+    const onPlayerLeft = (_pid: any, playerName: string) => {
+      console.log('Joueur parti:', playerName)
+      
+      // Ajouter un message système pour le départ d'un joueur
+      const leaveMessage = {
+        id: generateUUID(),
+        playerId: 'system',
+        playerName: 'Système',
+        content: `👋 ${playerName} a quitté la partie`,
+        message: `👋 ${playerName} a quitté la partie`,
+        timestamp: Date.now(),
+        isSystemMessage: true
+      }
+      console.log('Message système départ:', leaveMessage)
+      onChatMessage(leaveMessage)
+    }
     const onGameStarted = (gs: any) => {
       console.log('Partie démarrée !', gs)
       setGameState(gs)
@@ -145,13 +175,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     socket.on('aiThinking', (d: any) => console.log(`${d.playerName} réfléchit...`))
     socket.on('aiAction', (d: any) => console.log(`joué:`, d))
     socket.on('gameStateUpdated', onGameStateUpdated)
-    const getPlayerName = (playerId: string) => {
-  const player = gameState?.players.find((p: any) => p.id === playerId)
-  return player?.name || 'Joueur inconnu'
-}
-
-socket.on('cardRevealed', (card: any, by: any) => {
+    socket.on('cardRevealed', (card: any, by: any) => {
       console.log('Carte révélée:', card, 'par', by)
+      
+      const getPlayerName = (playerId: string) => {
+        const player = gameState?.players.find((p: any) => p.id === playerId)
+        const roomPlayer = roomState?.players.find((p: any) => p.id === playerId)
+        return player?.name || roomPlayer?.name || 'Joueur inconnu'
+      }
       
       // Ajouter un message système pour la révélation de carte
       const playerName = getPlayerName(by)
@@ -169,8 +200,14 @@ socket.on('cardRevealed', (card: any, by: any) => {
       onChatMessage(systemMessage)
     })
 
-socket.on('trioFormed', (trio: any, pid: any) => {
+    socket.on('trioFormed', (trio: any, pid: any) => {
       console.log('Trio formé:', trio, 'par', pid)
+      
+      const getPlayerName = (playerId: string) => {
+        const player = gameState?.players.find((p: any) => p.id === playerId)
+        const roomPlayer = roomState?.players.find((p: any) => p.id === playerId)
+        return player?.name || roomPlayer?.name || 'Joueur inconnu'
+      }
       
       // Ajouter un message système détaillé dans le chat
       const playerName = getPlayerName(pid)
@@ -231,7 +268,90 @@ socket.on('trioFormed', (trio: any, pid: any) => {
       socket.off('playerLeft', onPlayerLeft)
       socket.off('gameStarted', onGameStarted)
       socket.off('chatMessage', onChatMessage)
+      socket.off('aiPlayerAdded', (p: any) => console.log('IA ajoutée:', p.name))
+      socket.off('aiPlayerRemoved', () => console.log('IA supprimée'))
+      socket.off('aiThinking', (d: any) => console.log(`${d.playerName} réfléchit...`))
+      socket.off('aiAction', (d: any) => console.log(`joué:`, d))
       socket.off('gameStateUpdated', onGameStateUpdated)
+      socket.off('cardRevealed', (card: any, by: any) => {
+        console.log('Carte révélée:', card, 'par', by)
+        
+        const getPlayerName = (playerId: string) => {
+          const player = gameState?.players.find((p: any) => p.id === playerId)
+          const roomPlayer = roomState?.players.find((p: any) => p.id === playerId)
+          return player?.name || roomPlayer?.name || 'Joueur inconnu'
+        }
+        
+        // Ajouter un message système pour la révélation de carte
+        const playerName = getPlayerName(by)
+        const targetPlayerName = getPlayerName(card.targetPlayerId || card.ownerId || by) // Essayer plusieurs propriétés
+        const systemMessage = {
+          id: generateUUID(),
+          playerId: 'system',
+          playerName: 'Système',
+          content: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
+          message: `👁 ${playerName} a révelé la carte ${card.number || '?'} de ${targetPlayerName}`,
+          timestamp: Date.now(),
+          isSystemMessage: true
+        }
+        console.log('Message système ajouté:', systemMessage)
+        onChatMessage(systemMessage)
+      })
+      socket.off('trioFormed', (trio: any, pid: any) => {
+        console.log('Trio formé:', trio, 'par', pid)
+        
+        const getPlayerName = (playerId: string) => {
+          const player = gameState?.players.find((p: any) => p.id === playerId)
+          const roomPlayer = roomState?.players.find((p: any) => p.id === playerId)
+          return player?.name || roomPlayer?.name || 'Joueur inconnu'
+        }
+        
+        // Ajouter un message système détaillé dans le chat
+        const playerName = getPlayerName(pid)
+        const systemMessage = {
+          id: generateUUID(),
+          playerId: 'system',
+          playerName: 'Système',
+          content: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
+          message: `🎉 ${playerName} a formé le trio de ${trio.number} !`,
+          timestamp: Date.now(),
+          isSystemMessage: true
+        }
+        console.log('Message système trio ajouté:', systemMessage)
+        onChatMessage(systemMessage)
+        
+        // Ajouter un message système avec les détails du trio
+        const trioDetails = {
+          id: generateUUID(),
+          playerId: 'system',
+          playerName: 'Système',
+          content: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
+          message: `📋 Trio ${trio.number}: ${trio.cards?.map((c: any) => c.number || '?').join(' - ') || 'Cartes inconnues'}`,
+          timestamp: Date.now(),
+          isSystemMessage: true
+        }
+        console.log('Détails du trio:', trioDetails)
+        onChatMessage(trioDetails)
+        
+        // Mettre à jour le gameState avec le nouveau trio
+        setGameState((prev: any) => {
+          if (!prev) return prev
+          const updatedPlayers = prev.players.map((p: any) => {
+            if (p.id === pid) {
+              return {
+                ...p,
+                trios: [...p.trios, trio],
+                score: { ...p.score, trios: p.trios.length + 1 }
+              }
+            }
+            return p
+          })
+          return { ...prev, players: updatedPlayers }
+        })
+      })
+      socket.off('trioFailed', (pid: any) => console.log('Échec trio:', pid))
+      socket.off('turnChanged', (pid: any) => console.log('Tour:', pid))
+      socket.off('gameEnded', (r: any) => console.log('Partie terminée:', r))
       socket.off('error', onError)
     }
   }, []) // ← tableau vide, jamais retriggé

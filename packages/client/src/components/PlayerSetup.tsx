@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
 import { AvatarType } from '@3online/shared'
+import { useGame } from '../contexts/SimpleGame'
 import Button from './ui/Button'
 import AvatarBadge from './ui/AvatarBadge'
 import './PlayerSetup.css'
 
 interface PlayerSetupProps {
-  onComplete: (name: string, avatar: AvatarType, avatarSeed: string, nameColor: string) => void
+  onComplete: () => void
   onCancel?: () => void
   initialName?: string
   initialAvatar?: AvatarType
@@ -71,6 +72,7 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
   initialAvatarSeed = '',
   initialNameColor = '#E9D5FF',
 }) => {
+  const { setPlayerInfo } = useGame()
   const [name, setName] = useState(initialName)
   const [selectedAvatar, setSelectedAvatar] = useState(initialAvatar)
   const [avatarSeed, setAvatarSeed] = useState(initialAvatarSeed)
@@ -118,7 +120,13 @@ const PlayerSetup: React.FC<PlayerSetupProps> = ({
     e.preventDefault()
     if (validateName(name)) {
       const seedToSend = isGenerated ? (avatarSeed || name.trim()) : ''
-      onComplete(name.trim(), selectedAvatar, seedToSend, nameColor)
+      setPlayerInfo({
+        name: name.trim(),
+        avatar: selectedAvatar,
+        avatarSeed: seedToSend,
+        nameColor,
+      })
+      onComplete()
     }
   }
 

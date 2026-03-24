@@ -94,8 +94,8 @@
 
 .btn--secondary {
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(147, 51, 234, 0.9);
-  border: 1px solid rgba(147, 51, 234, 0.3);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   backdrop-filter: blur(10px);
 }
@@ -106,14 +106,14 @@
 
 .btn--secondary:hover {
   transform: translateY(-3px) scale(1.02);
-  box-shadow: 0 8px 25px rgba(147, 51, 234, 0.2);
-  border-color: rgba(147, 51, 234, 0.5);
+  box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .btn--secondary:active {
   transform: translateY(-1px) scale(0.98);
-  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.15);
-  border-color: rgba(147, 51, 234, 0.6);
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 .btn--secondary:hover:not(.btn--disabled) {

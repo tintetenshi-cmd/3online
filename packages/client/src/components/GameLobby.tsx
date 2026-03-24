@@ -243,7 +243,7 @@ const GameLobby: React.FC = () => {
                           </span>
                         </span>
                       )}
-                      <span className="message-content">{message.content}</span>
+                      <span className="message-content">{message.message || message.content}</span>
                     </div>
                   )
                 })}
