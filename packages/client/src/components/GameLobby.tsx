@@ -230,22 +230,27 @@ const GameLobby: React.FC = () => {
             <div className="lobby__chat">
               <h2>Chat</h2>
               <div className="chat-messages">
+                {(() => { console.log('DEBUG: chatMessages=', state.chatMessages, 'roomState=', state.roomState); return null })()}
                 {state.chatMessages.map((message: any) => {
+                  // Debug
+                  console.log('DEBUG: message=', message, 'playerId=', message.playerId, 'playerName=', message.playerName)
+                  console.log('DEBUG: roomState.players=', state.roomState?.players)
+                  
                   // Pour les messages système, playerId = 'system', donc on cherche dans playerName
                   let author = null
                   let displayName = message.playerName || 'Système'
                   
                   if (!message.isSystemMessage) {
                     // Messages de joueurs : chercher le joueur par son ID
-                    author = state.roomState?.players.find((p: any) => p.id === message.playerId)
+                    author = state.roomState?.players?.find((p: any) => p.id === message.playerId)
                     displayName = author?.name || message.playerName || 'Joueur inconnu'
-                  } else if (message.playerId !== 'system') {
+                  } else if (message.playerId && message.playerId !== 'system') {
                     // Messages système avec un playerId spécifique (ex: révélations de cartes)
-                    author = state.roomState?.players.find((p: any) => p.id === message.playerId)
-                    if (author) {
-                      displayName = author.name
-                    }
+                    author = state.roomState?.players?.find((p: any) => p.id === message.playerId)
+                    displayName = author?.name || message.playerName || 'Joueur'
                   }
+                  
+                  console.log('DEBUG: author trouvé=', author, 'displayName=', displayName)
                   
                   const t = pseudoTextStyle(author?.nameColor)
                   

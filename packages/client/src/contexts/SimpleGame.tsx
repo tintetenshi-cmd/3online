@@ -154,7 +154,14 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     }
     const onChatMessage = (msg: any) => {
       setRoomState((prev: any) => {
-        if (!prev) return prev
+        if (!prev) {
+          // Si roomState n'existe pas encore, créer un état temporaire
+          return {
+            info: null,
+            players: [],
+            chatMessages: [msg]
+          }
+        }
         return { ...prev, chatMessages: [...(prev.chatMessages || []), msg] }
       })
     }
